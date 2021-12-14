@@ -138,7 +138,7 @@ for month in months:
     for index, row in monthly_df.iterrows():
         url_id = row["id"]
         if '{}.pickle'.format(url_id) not in already_done: continue
-        if url_id in evaluation_dataset_ids: continue
+        if url_id not in evaluation_dataset_ids: continue
         with open('../../../../condor_test/data/processed/url_to_user_sequence/{}.pickle'.format(url_id), "rb") as fp: 
             url = pkl.load(fp)
         y.append(int(monthly_df[monthly_df['id']==url_id].iloc[0]['tpfc_rating_encoding']))
@@ -160,8 +160,8 @@ for month in months:
     print('x shape', x.shape)
     print('y shape', y.shape)
 
-    np.save('../../../data/features/condor_gossipcop_politifact/{}_x.npy'.format(month), x)
-    np.save('../../../data/features/condor_gossipcop_politifact/{}_y.npy'.format(month), y)
+    np.save('../../../data/features/condor_gossipcop_politifact/eval_{}_x.npy'.format(month), x)
+    np.save('../../../data/features/condor_gossipcop_politifact/eval_{}_y.npy'.format(month), y)
 
 
 
