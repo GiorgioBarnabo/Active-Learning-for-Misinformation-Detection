@@ -1,5 +1,9 @@
 /data/features/condor_gossipcop_politifact/y.npy
 /data/features/condor_gossipcop_politifact/x.npy
+/data/features/gossipcop/y.npy
+/data/features/gossipcop/x.npy
+/data/features/condor/y.npy
+/data/features/condor/x.npy
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
