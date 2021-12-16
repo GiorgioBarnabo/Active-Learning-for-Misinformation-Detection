@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+import random
 import pickle as pkl
 import json
 import time
@@ -118,86 +119,91 @@ df = pd.read_csv("../../../data/final_dataset_condor_gossipcop_politifact.csv")
 #df_filtered = df[df['timestamp_first_tweet'] > 1483228799]
 #df_filtered = df_filtered[df_filtered['timestamp_first_tweet'] < 1577836801
 
+df = df[df['dataset'] == 'poli']
+
 with open('../../../../condor_test/data/processed/all_users_features.pickle', "rb") as fp:
     all_users = pkl.load(fp)
 
 already_done = os.listdir('../../../../condor_test/data/processed/url_to_user_sequence/')
 
-with open("../../../data/evaluation_dataset_ids.txt", "rb") as fp:
+with open("../../../data/poli_evaluation_dataset_ids.txt", "rb") as fp:
    evaluation_dataset_ids = pkl.load(fp)
 
-months = df['month_year'].unique()
+# months = df['month_year'].unique()
 
-for month in months:
-    print(month)
-    monthly_df = df[df['month_year'] == month]
+# for month in months:
+#     #if '2017' not in month and '2018' not in month and '2019' not in month: continue
+
+#     print(month)
+
+#     monthly_df = df[df['month_year'] == month]
     
-    y = []
-    x = []
+#     y = []
+#     x = []
 
-    for index, row in monthly_df.iterrows():
-        url_id = row["id"]
-        if '{}.pickle'.format(url_id) not in already_done: continue
-        if url_id not in evaluation_dataset_ids: continue
-        with open('../../../../condor_test/data/processed/url_to_user_sequence/{}.pickle'.format(url_id), "rb") as fp: 
-            url = pkl.load(fp)
-        y.append(int(monthly_df[monthly_df['id']==url_id].iloc[0]['tpfc_rating_encoding']))
-        i = 0
-        url_features = []
-        for spreading_user in url:
-            user_id = spreading_user[0]
-            if i < 100 and user_id in all_users.keys():
-                url_features.append(all_users[user_id])
-                i += 1
-        while i < 100:
-            url_features.append([0]*13)
-            i += 1
-        x.append(url_features)
-
-    x = np.array(x)
-    y = np.array(y)
-
-    print('x shape', x.shape)
-    print('y shape', y.shape)
-
-    np.save('../../../data/features/condor_gossipcop_politifact/eval_{}_x.npy'.format(month), x)
-    np.save('../../../data/features/condor_gossipcop_politifact/eval_{}_y.npy'.format(month), y)
-
-
-
-# y = []
-# x = []
-
-# j = 0 
-
-# for index, row in df.iterrows():
-#     url_id = row["id"]
-#     if '{}.pickle'.format(url_id) not in already_done: continue
-#     if url_id in evaluation_dataset_ids: continue
-#     evaluation_dataset_ids.append(url_id)
-#     j+=1
-#     print(j)
-#     with open('../../../../condor_test/data/processed/url_to_user_sequence/{}.pickle'.format(url_id), "rb") as fp: 
-#         url = pkl.load(fp)
-#     y.append(int(df[df['id']==url_id].iloc[0]['tpfc_rating_encoding']))
-#     i = 0
-#     url_features = []
-#     for spreading_user in url:
-#         user_id = spreading_user[0]
-#         if i < 100 and user_id in all_users.keys():
-#             url_features.append(all_users[user_id])
+#     for index, row in monthly_df.iterrows():
+#         url_id = row["id"]
+#         if '{}.pickle'.format(url_id) not in already_done: continue
+#         if url_id not in evaluation_dataset_ids: continue
+#         with open('../../../../condor_test/data/processed/url_to_user_sequence/{}.pickle'.format(url_id), "rb") as fp: 
+#             url = pkl.load(fp)
+#         y.append(int(monthly_df[monthly_df['id']==url_id].iloc[0]['tpfc_rating_encoding']))
+#         i = 0
+#         url_features = []
+#         for spreading_user in url:
+#             user_id = spreading_user[0]
+#             if i < 100 and user_id in all_users.keys():
+#                 url_features.append(all_users[user_id])
+#                 i += 1
+#         while i < 100:
+#             url_features.append([0]*13)
 #             i += 1
-#     while i < 100:
-#         url_features.append([0]*13)
-#         i += 1
-#     x.append(url_features)
+#         x.append(url_features)
 
-# x = np.array(x)
-# y = np.array(y)
+#     x = np.array(x)
+#     y = np.array(y)
 
-# print('x shape', x.shape)
-# print('y shape', y.shape)
+#     print('x shape', x.shape)
+#     print('y shape', y.shape)
 
-# np.save('../../../data/features/condor_gossipcop_politifact/evaluation_x.npy', x)
-# np.save('../../../data/features/condor_gossipcop_politifact/evaluation_y.npy', y)
+#     np.save('../../../data/features/condor/eval_{}_x.npy'.format(month), x)
+#     np.save('../../../data/features/condor/eval_{}_y.npy'.format(month), y)
+
+
+
+y = []
+x = []
+
+j = 0 
+
+for index, row in df.iterrows():
+    url_id = row["id"]
+    if '{}.pickle'.format(url_id) not in already_done: continue
+    if url_id not in evaluation_dataset_ids: continue
+    evaluation_dataset_ids.append(url_id)
+    j+=1
+    print(j)
+    with open('../../../../condor_test/data/processed/url_to_user_sequence/{}.pickle'.format(url_id), "rb") as fp: 
+        url = pkl.load(fp)
+    y.append(int(df[df['id']==url_id].iloc[0]['tpfc_rating_encoding']))
+    i = 0
+    url_features = []
+    for spreading_user in url:
+        user_id = spreading_user[0]
+        if i < 100 and user_id in all_users.keys():
+            url_features.append(all_users[user_id])
+            i += 1
+    while i < 100:
+        url_features.append([0]*13)
+        i += 1
+    x.append(url_features)
+
+x = np.array(x)
+y = np.array(y)
+
+print('x shape', x.shape)
+print('y shape', y.shape)
+
+np.save('../../../data/features/politifact/evaluation_x.npy', x)
+np.save('../../../data/features/politifact/evaluation_y.npy', y)
 
