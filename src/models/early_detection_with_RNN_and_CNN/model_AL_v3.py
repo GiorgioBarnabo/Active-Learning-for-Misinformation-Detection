@@ -466,7 +466,7 @@ def main():
     batch_size = 128
     nb_sample = 1
     seq_lens = [10, 20, 40, 60, 80]
-    data_opt =  'condor_gossipcop_politifact' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
+    data_opt =  'condor' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
 
     warm_start_year = 2016 #to load all data until this year
     stop_at_year = 2020 #load until this year (NOT INCLUDED)
