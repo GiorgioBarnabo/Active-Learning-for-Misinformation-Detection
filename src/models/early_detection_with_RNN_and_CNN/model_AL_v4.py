@@ -502,7 +502,7 @@ def main():
     batch_size = 128
     nb_sample = 1
     seq_lens = [10, 20, 40, 60, 80]
-    results_set = 'results_fulltrain_fullval_with-warmstart' #specify characteristics current set of experiments
+    results_set = 'fulltrain_fullval_with-warmstart' #specify characteristics current set of experiments
     
     # results_fulltrain_fullval_with-warmstart
     # results_fulltrain_fullval_without-warmstart
@@ -626,7 +626,7 @@ def main():
                             print("data['x_train'].shape, ", data['x_train'].shape)
                             #print("data['x_test'].shape, ", data['x_test'].shape)
 
-                            model_folder = os.path.join(project_folder, 'src', 'models', 'early_detection_with_RNN_and_CNN', 'rc_model', data_opt)
+                            model_folder = os.path.join(project_folder, 'src', 'models', 'early_detection_with_RNN_and_CNN', 'rc_model', data_opt, results_set)
                             if not os.path.isdir(model_folder):
                                 os.makedirs(model_folder)
                             #print("model folder name: ", model_folder)
