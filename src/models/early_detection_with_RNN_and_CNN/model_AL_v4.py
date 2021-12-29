@@ -502,7 +502,13 @@ def main():
     batch_size = 128
     nb_sample = 1
     seq_lens = [10, 20, 40, 60, 80]
-    results_set = 'results_fulltrain_val-3k_with-warmstart' #specify characteristics current set of experiments
+    results_set = 'results_fulltrain_fullval_with-warmstart' #specify characteristics current set of experiments
+    
+    # results_fulltrain_fullval_with-warmstart
+    # results_fulltrain_fullval_without-warmstart
+    # results_fulltrain_val-3k_with-warmstart
+    # results_fulltrain_val-3k_without-warmstart
+    
     data_opt =  'condor' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
 
     warm_start_years = [2015,2018] #warm-start data from year[0] (included) to year[1] (not included)
@@ -515,7 +521,6 @@ def main():
     #"diversity-cluster"
     #"combined"
 
-
     train_val_test_split_ratio = [0.80, 0.20, 0.] #test is 0 because separated
     num_urls_k_list = [10, 30, 60, 90, 120]
     diversity_nums = [1,1,1] #centroids, outliers, randoms; used only if AL_method = diversity-cluster
@@ -525,17 +530,17 @@ def main():
     debugging = False #True
     if debugging: 
         epochs = 1
-        seq_lens = 10
+        seq_lens = [10]
         AL_methods = ["combined"]
         num_urls_k_list = [10]
 
     train_last_samples_list = [np.inf for k in num_urls_k_list] #Use np.inf to not discard training 
-    val_last_samples_list = [3*k for k in num_urls_k_list] #Use np.inf to not discard validation
+    val_last_samples_list = [np.inf for k in num_urls_k_list] #Use np.inf to not discard validation
     add_val_to_train = False #(discard=add to train)
 
     retrain_from_scratch = False
 
-    results_folder = os.path.join(project_folder, 'src', 'models', 'early_detection_with_RNN_and_CNN', results_set, data_opt)
+    results_folder = os.path.join(project_folder, 'src', 'models', 'early_detection_with_RNN_and_CNN', "results", results_set, data_opt)
     #create results_folder if not exists
     if not os.path.isdir(results_folder):
       os.makedirs(results_folder)
@@ -564,87 +569,91 @@ def main():
             print('AL_method {}'.format(AL_method))
             for enum_num_urls_k,num_urls_k in enumerate(num_urls_k_list):
 
-                all_rs = np.zeros((nb_sample,
-                                   len(all_year_month_ordered_keys) - warm_start_ending_key_id +1,
-                                   len(all_nonempty_year_month_test_ordered_keys),
-                                   8,))
+                results_filename = os.path.join(results_folder, 'seqlen_'+str(seq_len) + '_ALm_'+AL_method + '_k_'+str(num_urls_k) + '.npy')
+                if not os.path.isfile(results_filename):
+                    all_rs = np.zeros((nb_sample,
+                                    len(all_year_month_ordered_keys) - warm_start_ending_key_id +1,
+                                    len(all_nonempty_year_month_test_ordered_keys),
+                                    8,))
 
-                all_true_false_nums = np.zeros((nb_sample,
-                                                len(all_year_month_ordered_keys) - warm_start_ending_key_id +1,
-                                                4,))
-                
-                for sample in range(nb_sample):
-                    print('sample {}'.format(sample))
-
-                    data = {}
+                    all_true_false_nums = np.zeros((nb_sample,
+                                                    len(all_year_month_ordered_keys) - warm_start_ending_key_id +1,
+                                                    4,))
                     
-                    data['x_train'] = None
-                    data['y_train'] = None
+                    for sample in range(nb_sample):
+                        print('sample {}'.format(sample))
+
+                        data = {}
+                        
+                        data['x_train'] = None
+                        data['y_train'] = None
+                        
+                        data['x_valid'] = None
+                        data['y_valid'] = None
+
+                        #data['x_test'] = prepare_data(np.load(os.path.join(project_folder, 'data', 'features', data_opt,"evaluation_x.npy")), seq_len, data_opt)
+                        #data['y_test'] = np.load(os.path.join(project_folder, 'data', 'features', data_opt,"evaluation_y.npy"))
+
+                        model = None
+
+                        starting_key_id = warm_start_starting_key_id
+
+                        #print(seq_len)
+                        #print(nb_feature)
+
+                        tf.compat.v1.set_random_seed(123)
+                        model = rc_model(input_shape = [seq_len, nb_feature])
+                        #print(model.summary())
+
+                        for iteration_num,current_key_id in enumerate(range(warm_start_ending_key_id,len(all_year_month_ordered_keys)+1)):
+                            print("CURRENT PERIOD:", all_year_month_ordered_keys[starting_key_id], "(incl.) - ", all_year_month_ordered_keys[current_key_id-1],"(incl.)")
+                            new_x, new_y = prepare_new_data_in_range(all_data, seq_len, data_opt, all_year_month_ordered_keys, starting_key_id, current_key_id)
+
+                            print(new_x.shape, new_y.shape)
+
+                            data, new_positives, new_negatives = merge_new_data(data, new_x, new_y, train_val_test_split_ratio,
+                                                AL_method, model, num_urls_k, combined_AL_nums, diversity_nums,
+                                                train_last_samples_list[enum_num_urls_k], val_last_samples_list[enum_num_urls_k], add_val_to_train)
+
+                            #save new_positives/negatives and current_positives/negatives
+                            current_positives = np.sum(data['y_train']) + np.sum(data['y_valid'])
+                            current_negatives = len(data['y_train']) - current_positives
+
+                            all_true_false_nums[sample,iteration_num,:] += np.array([new_positives, new_negatives,
+                                                                                    current_positives,current_negatives])
+
+                            print("data['x_valid'].shape, ", data['x_valid'].shape)
+                            print("data['x_train'].shape, ", data['x_train'].shape)
+                            #print("data['x_test'].shape, ", data['x_test'].shape)
+
+                            model_folder = os.path.join(project_folder, 'src', 'models', 'early_detection_with_RNN_and_CNN', 'rc_model', data_opt)
+                            if not os.path.isdir(model_folder):
+                                os.makedirs(model_folder)
+                            #print("model folder name: ", model_folder)
+                            model_name = 'seqlen_'+str(seq_len) + '_ALm_'+AL_method + '_k_'+str(num_urls_k)
+                            #print("model name: ", model_name)
+
+                            if retrain_from_scratch:
+                                tf.compat.v1.set_random_seed(123)
+                                model = rc_model(input_shape = [seq_len, nb_feature])
+                            model_train(model, file_name = os.path.join(model_folder, model_name), data = data, epochs = epochs, batch_size = batch_size, iteration_num = iteration_num)
+
+                            model = load_model(os.path.join(model_folder, model_name))
+
+                            rs = model_evaluate_per_month(model, all_nonempty_year_month_test_ordered_keys, prepared_test_data)
+                        
+                            all_rs[sample,iteration_num,:,:] += rs
+
+                            starting_key_id = current_key_id
                     
-                    data['x_valid'] = None
-                    data['y_valid'] = None
+                    with open(results_filename, 'wb') as f:
+                        np.save(f, all_rs)
 
-                    #data['x_test'] = prepare_data(np.load(os.path.join(project_folder, 'data', 'features', data_opt,"evaluation_x.npy")), seq_len, data_opt)
-                    #data['y_test'] = np.load(os.path.join(project_folder, 'data', 'features', data_opt,"evaluation_y.npy"))
-
-                    model = None
-
-                    starting_key_id = warm_start_starting_key_id
-
-                    #print(seq_len)
-                    #print(nb_feature)
-
-                    tf.compat.v1.set_random_seed(123)
-                    model = rc_model(input_shape = [seq_len, nb_feature])
-                    #print(model.summary())
-
-                    for iteration_num,current_key_id in enumerate(range(warm_start_ending_key_id,len(all_year_month_ordered_keys)+1)):
-                        print("CURRENT PERIOD:", all_year_month_ordered_keys[starting_key_id], "(incl.) - ", all_year_month_ordered_keys[current_key_id-1],"(incl.)")
-                        new_x, new_y = prepare_new_data_in_range(all_data, seq_len, data_opt, all_year_month_ordered_keys, starting_key_id, current_key_id)
-
-                        print(new_x.shape, new_y.shape)
-
-                        data, new_positives, new_negatives = merge_new_data(data, new_x, new_y, train_val_test_split_ratio,
-                                              AL_method, model, num_urls_k, combined_AL_nums, diversity_nums,
-                                              train_last_samples_list[enum_num_urls_k], val_last_samples_list[enum_num_urls_k], add_val_to_train)
-
-                        #save new_positives/negatives and current_positives/negatives
-                        current_positives = np.sum(data['y_train']) + np.sum(data['y_valid'])
-                        current_negatives = len(data['y_train']) - current_positives
-
-                        all_true_false_nums[sample,iteration_num,:] += np.array([new_positives, new_negatives,
-                                                                                 current_positives,current_negatives])
-
-                        print("data['x_valid'].shape, ", data['x_valid'].shape)
-                        print("data['x_train'].shape, ", data['x_train'].shape)
-                        #print("data['x_test'].shape, ", data['x_test'].shape)
-
-                        model_folder = os.path.join(project_folder, 'src', 'models', 'early_detection_with_RNN_and_CNN', 'rc_model', data_opt)
-                        if not os.path.isdir(model_folder):
-                            os.makedirs(model_folder)
-                        #print("model folder name: ", model_folder)
-                        model_name = 'seqlen_'+str(seq_len) + '_ALm_'+AL_method + '_k_'+str(num_urls_k)
-                        #print("model name: ", model_name)
-
-                        if retrain_from_scratch:
-                            tf.compat.v1.set_random_seed(123)
-                            model = rc_model(input_shape = [seq_len, nb_feature])
-                        model_train(model, file_name = os.path.join(model_folder, model_name), data = data, epochs = epochs, batch_size = batch_size, iteration_num = iteration_num)
-
-                        model = load_model(os.path.join(model_folder, model_name))
-
-                        rs = model_evaluate_per_month(model, all_nonempty_year_month_test_ordered_keys, prepared_test_data)
+                    with open(os.path.join(results_folder, 'seqlen_'+str(seq_len) + '_ALm_'+AL_method + '_k_'+str(num_urls_k) + '_sample_size.npy'), 'wb') as f:
+                        np.save(f, all_true_false_nums)
+                else:
+                    print("!!!"*10, results_filename,"already exists --> SKIP", "!!!"*10)
                     
-                        all_rs[sample,iteration_num,:,:] += rs
-
-                        starting_key_id = current_key_id
-                
-                with open(os.path.join(results_folder, 'seqlen_'+str(seq_len) + '_ALm_'+AL_method + '_k_'+str(num_urls_k) + '.npy'), 'wb') as f:
-                    np.save(f, all_rs)
-
-                with open(os.path.join(results_folder, 'seqlen_'+str(seq_len) + '_ALm_'+AL_method + '_k_'+str(num_urls_k) + '_sample_size.npy'), 'wb') as f:
-                    np.save(f, all_true_false_nums)
-                
 if __name__ == '__main__':
     main()
     
