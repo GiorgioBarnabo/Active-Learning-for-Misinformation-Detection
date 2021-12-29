@@ -502,16 +502,16 @@ def main():
     batch_size = 128
     nb_sample = 1
     seq_lens = [10, 20, 40, 60, 80]
-    results_set = 'fulltrain_fullval_with-warmstart' #specify characteristics current set of experiments
+    results_set = 'fulltrain_val-3k_without-warmstart' #specify characteristics current set of experiments
     
-    # results_fulltrain_fullval_with-warmstart
-    # results_fulltrain_fullval_without-warmstart
-    # results_fulltrain_val-3k_with-warmstart
-    # results_fulltrain_val-3k_without-warmstart
+    # fulltrain_fullval_with-warmstart
+    # fulltrain_fullval_without-warmstart
+    # fulltrain_val-3k_with-warmstart
+    # fulltrain_val-3k_without-warmstart
     
     data_opt =  'condor' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
 
-    warm_start_years = [2015,2018] #warm-start data from year[0] (included) to year[1] (not included)
+    warm_start_years = [2000,2000] #warm-start data from year[0] (included) to year[1] (not included)
                                    #to avoid warm-start, pick SAME year not included in training_years (that data will not be loaded)
     training_years = [2018,2020] #to train (after warm-start) from year[0] (included) to year[1] (not included)
 
@@ -535,7 +535,7 @@ def main():
         num_urls_k_list = [10]
 
     train_last_samples_list = [np.inf for k in num_urls_k_list] #Use np.inf to not discard training 
-    val_last_samples_list = [np.inf for k in num_urls_k_list] #Use np.inf to not discard validation
+    val_last_samples_list = [3*k for k in num_urls_k_list] #Use np.inf to not discard validation
     add_val_to_train = False #(discard=add to train)
 
     retrain_from_scratch = False
