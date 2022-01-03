@@ -4,6 +4,7 @@
 /data/features/gossipcop/x.npy
 /data/features/condor/y.npy
 /data/features/condor/x.npy
+/src/models/early_detection_with_RNN_and_CNN/rc_model/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
