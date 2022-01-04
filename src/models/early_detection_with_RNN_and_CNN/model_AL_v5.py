@@ -508,25 +508,27 @@ def main():
     batch_size = 128
     nb_sample = 1
     seq_lens = [10, 20, 40, 60, 80]
-    results_set = 'train-3k_val-3k_with-warmstart' #specify characteristics current set of experiments
+    results_set = 'offline_fulltrain_fullval_with-warmstart' #specify characteristics current set of experiments
     
     ''' Results names
     fulltrain_fullval_with-warmstart
     fulltrain_fullval_without-warmstart
     fulltrain_val-3k_with-warmstart
     fulltrain_val-3k_without-warmstart
-
     train-3k_val-3k_with-warmstart
     train-3k_val-3k_without-warmstart
+
+    offline_fulltrain_fullval_with-warmstart
+    offline_fulltrain_fullval_without-warmstart
     '''
     
-    data_opt =  'condor' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
+    data_opt =  'gossipcop' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
 
-    warm_start_years = [2015,2017] #warm-start data from year[0] (included) to year[1] (included)
+    warm_start_years = [2015,2016] #warm-start data from year[0] (included) to year[1] (included)
                                    #to avoid warm-start: pick np.inf
-    training_years = [2018,2019] #to train (after warm-start) from year[0] (included) to year[1] (included)
+    training_years = [2017,2018] #to train (after warm-start) from year[0] (included) to year[1] (included)
 
-    offline_AL = 0 #0 == Online, >0 == Number of iterations for Offline AL
+    offline_AL = 24 #0 == Online, >0 == Number of iterations for Offline AL
     AL_methods = ["combined", "uncertainty-margin", "diversity-cluster", "random"] #don't use "_" to keep filename easily separable
     #"random"
     #"uncertainty-margin"
@@ -547,8 +549,8 @@ def main():
         num_urls_k_list = [10]
         offline_AL = 36
 
-    train_last_samples_list = [3*k for k in num_urls_k_list] #Use np.inf to not discard training 
-    val_last_samples_list = [3*k for k in num_urls_k_list] #Use np.inf to not discard validation
+    train_last_samples_list = [np.inf for k in num_urls_k_list] #Use np.inf to not discard training 
+    val_last_samples_list = [np.inf for k in num_urls_k_list] #Use np.inf to not discard validation
     add_val_to_train = False #(discard=add to train)
 
     retrain_from_scratch = False
