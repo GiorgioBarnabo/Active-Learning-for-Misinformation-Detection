@@ -108,7 +108,7 @@ def main():
     batch_size = 128
     nb_sample = 1
     seq_lens = [5, 10, 20, 40, 60, 80]
-    data_opt =  'condor_gossipcop_politifact' #'twitter'
+    data_opt =  'politifact' #'twitter'
     
     if data_opt =='twitter':
         data_name = 'twitter15'
@@ -130,7 +130,7 @@ def main():
     for seq_len in seq_lens:
         rs_avg[seq_len] = [0 for i in range(7)]
     
-    split_ratio = [0.50, 0.42, 0.08]
+    split_ratio = [0.10, 0.30, 0.60]
     
     for sample in range(nb_sample):
 
