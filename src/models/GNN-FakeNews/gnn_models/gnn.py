@@ -2,6 +2,7 @@ import argparse
 import time
 from tqdm import tqdm
 import copy as cp
+import os
 
 import torch
 import torch.nn.functional as F
@@ -84,7 +85,6 @@ def compute_test(loader, verbose=False):
 		out_log.append([F.softmax(out, dim=1), y])
 		loss_test += F.nll_loss(out, y).item()
 	return eval_deep(out_log, loader), loss_test
-
 
 parser = argparse.ArgumentParser()
 
