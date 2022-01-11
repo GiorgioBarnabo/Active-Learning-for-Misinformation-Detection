@@ -6,7 +6,8 @@
 /data/features/condor/x.npy
 /src/models/early_detection_with_RNN_and_CNN/rc_model/*
 /src/models/GNN-FakeNews/data/gossipcop/*
-/src/models/GNN-FakeNews/data/politifact/new_bert_feature.npz
+/src/models/GNN-FakeNews/data/politifact/raw/new_bert_feature.npz
+/src/models/GNN-FakeNews/data/politifact/raw/new_bert_feature_old.npz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

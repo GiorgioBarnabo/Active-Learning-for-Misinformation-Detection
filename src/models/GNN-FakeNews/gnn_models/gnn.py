@@ -2,7 +2,6 @@ import argparse
 import time
 from tqdm import tqdm
 import copy as cp
-import os
 
 import torch
 import torch.nn.functional as F
@@ -11,9 +10,16 @@ from torch_geometric.nn import GCNConv, SAGEConv, GATConv, DataParallel
 from torch.utils.data import random_split
 from torch_geometric.data import DataLoader, DataListLoader
 
+import sys
+# insert at 1, 0 is the script path (or '' in REPL)
+import os
+print(os.getcwd())
+sys.path.insert(1, '')
+
 
 from utils.data_loader import *
 from utils.eval_helper import *
+
 
 
 """
@@ -85,6 +91,7 @@ def compute_test(loader, verbose=False):
 		out_log.append([F.softmax(out, dim=1), y])
 		loss_test += F.nll_loss(out, y).item()
 	return eval_deep(out_log, loader), loss_test
+
 
 parser = argparse.ArgumentParser()
 
