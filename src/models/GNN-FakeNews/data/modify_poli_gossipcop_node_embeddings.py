@@ -8,6 +8,7 @@ from sentence_transformers import SentenceTransformer
 import os
 from statistics import mean
 
+'''
 #model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
 
 df = pd.read_csv("../../../../data/final_dataset_condor_gossipcop_politifact.csv")
@@ -57,15 +58,17 @@ print(bert_feature.shape)
 np.savez('gossipcop/raw/new_profile_feature_new.npz', profile_feature)
 np.savez('gossipcop/raw/new_bert_feature_new.npz', bert_feature)
 
-# gossipcop_bert = np.load('gossipcop/raw/new_bert_feature.npz')
-# politifact_bert = np.load('politifact/raw/new_bert_feature.npz')
+'''
 
-# gossipcop_profile = np.load('gossipcop/raw/new_profile_feature.npz')
-# politifact_profile = np.load('politifact/raw/new_profile_feature.npz')
+gossipcop_bert = np.load('gossipcop/raw/new_bert_feature.npz')
+politifact_bert = np.load('politifact/raw/new_bert_feature.npz')
 
-# print(gossipcop_bert['shape'])
-# print(politifact_bert['shape'])
-# print(gossipcop_profile['shape'])
-# print(politifact_profile['shape'])
+gossipcop_profile = np.load('gossipcop/raw/new_profile_feature.npz')
+politifact_profile = np.load('politifact/raw/new_profile_feature.npz')
+
+print(gossipcop_bert['arr_0'].shape)
+print(politifact_bert['arr_0'].shape)
+print(gossipcop_profile['arr_0'].shape)
+print(politifact_profile['arr_0'].shape)
 
 #downloaded_users_list = os.listdir('../data/raw/all_twitter_accounts/user_profiles/')
