@@ -560,7 +560,7 @@ def main():
     val_last_samples_list = [np.inf for k in num_urls_k_list] #Use np.inf to not discard validation
     add_val_to_train = False #(discard=add to train)
 
-    retrain_from_scratch = False
+    retrain_from_scratch = True
 
     results_folder = os.path.join(project_folder, 'src', 'models', 'early_detection_with_RNN_and_CNN', "results", results_set, data_opt)
     #create results_folder if not exists
