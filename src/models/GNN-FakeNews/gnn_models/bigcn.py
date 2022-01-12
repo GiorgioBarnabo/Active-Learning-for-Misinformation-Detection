@@ -13,6 +13,15 @@ from torch_geometric.nn import GCNConv
 from torch_geometric.data import DataLoader, DataListLoader
 from torch_geometric.nn import DataParallel
 
+import sys
+# insert at 1, 0 is the script path (or '' in REPL)
+import os
+print(os.getcwd())
+sys.path.insert(1, '')
+
+from utils.data_loader import *
+from utils.eval_helper import *
+
 from utils.data_loader import *
 from utils.eval_helper import *
 

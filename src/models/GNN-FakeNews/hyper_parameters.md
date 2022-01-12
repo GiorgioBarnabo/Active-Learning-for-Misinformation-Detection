@@ -3,7 +3,7 @@ Model hyper-parameters are reported in the following table.
 ### Politifact
 | model   | feature | epoch  | lr | emb_size | batch_num  |
 |-------|--------|--------|--------|-----------|-----------|
-| GNN-CL  | profile  | 60  | 0.001 | 128 | 128  |
+| GNN-CL  | profile  | 60  | 0.001 | 128 | 128  | 
 | GCNFN  | content  | 100  | 0.001 | 128 | 128  |
 | BiGCN  |  bert | 50  | 0.001 | 128 | 128  |
 | UPFD-GAT  | bert  | 50  | 0.001 | 128 | 128  |

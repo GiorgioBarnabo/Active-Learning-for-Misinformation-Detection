@@ -55,14 +55,16 @@ def read_graph_data(folder, feature):
 	PyG util code to create PyG data instance from raw graph data
 	"""
 
-	node_attributes = sp.load_npz(folder + f'new_{feature}_feature.npz')
+	print("!!!"*10,"LOADING FEATURE",feature,"!!!"*10)
+	#node_attributes = sp.load_npz(folder + f'new_{feature}_feature.npz')
+	node_attributes = np.load(folder + f'new_{feature}_feature.npz')["arr_0"]
 	edge_index = read_file(folder, 'A', torch.long).t()
 	node_graph_id = np.load(folder + 'node_graph_id.npy')
 	graph_labels = np.load(folder + 'graph_labels.npy')
 
-
 	edge_attr = None
-	x = torch.from_numpy(node_attributes.todense()).to(torch.float)
+	#x = torch.from_numpy(node_attributes.todense()).to(torch.float)
+	x = torch.from_numpy(node_attributes).to(torch.float)
 	node_graph_id = torch.from_numpy(node_graph_id).to(torch.long)
 	y = torch.from_numpy(graph_labels).to(torch.long)
 	_, y = y.unique(sorted=True, return_inverse=True)
