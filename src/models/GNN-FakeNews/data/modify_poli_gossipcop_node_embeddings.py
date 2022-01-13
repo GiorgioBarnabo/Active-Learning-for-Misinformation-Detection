@@ -16,6 +16,35 @@ df = pd.read_csv("../../../../data/full_dataset_condor_gossipcop_politifact.csv"
 
 twitter_users_dir = '../../../../../condor_test/data/raw/all_twitter_accounts/'
 
+# twitter_accounts = []
+
+# with open('pol_id_twitter_mapping.pkl', 'rb') as handle:
+#     dataset_users = pickle.load(handle)
+# for key in dataset_users:
+#     if 'politifact' not in dataset_users[key]:
+#         twitter_accounts.append(dataset_users[key])
+
+# with open('gos_id_twitter_mapping.pkl', 'rb') as handle:
+#     dataset_users = pickle.load(handle)
+# for key in dataset_users:
+#     if 'gossipcop' not in dataset_users[key]:
+#         twitter_accounts.append(dataset_users[key])
+
+# print(len(twitter_accounts))
+
+# twitter_accounts = list(set(twitter_accounts))
+
+# print(len(twitter_accounts))
+
+# missing = 0
+
+# for account in twitter_accounts:
+#     if not os.path.isfile(os.path.join(twitter_users_dir, 'user_profiles', account+'.json')):
+#         missing += 1
+
+# print(missing)
+
+
 # with open('pol_id_twitter_mapping.pkl', 'rb') as handle:
 #     dataset_users = pickle.load(handle)
 
@@ -42,14 +71,13 @@ mean_bert = np.mean(np.array(mean_bert), axis=0).tolist()
 for i in range(len(dataset_users)):
     if 'gossipcop' in dataset_users[i]:
         print('NEWS!!')
-        profile_feature.append([0]*13)
+        profile_feature.append(np.random.rand(13))
         bert_feature.append(model.encode(df[df['id'] == dataset_users[i]].iloc[0]['share_title']).tolist())
     elif not os.path.isfile(os.path.join(twitter_users_dir, 'user_profiles', dataset_users[i]+'.json')):
         print('MISSING PROFILE!!')
-        profile_feature.append(mean_profile)
-        bert_feature.append(mean_bert)
+        profile_feature.append(np.random.rand(13))
+        bert_feature.append(np.random.rand(768))
     else:
-        print('We have this one!!')
         with open(os.path.join(twitter_users_dir, 'user_profiles', dataset_users[i]+'.json')) as json_file:
             data = json.load(json_file)
             profile_feature.append(data['user_features'])
@@ -63,6 +91,8 @@ print(bert_feature.shape)
 
 np.savez('gossipcop/raw/new_profile_feature.npz', profile_feature)
 np.savez('gossipcop/raw/new_bert_feature.npz', bert_feature)
+
+
 
 ## --------------------------------------------------------------
 

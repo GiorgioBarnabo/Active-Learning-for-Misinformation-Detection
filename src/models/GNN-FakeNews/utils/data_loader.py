@@ -65,6 +65,8 @@ def read_graph_data(folder, feature):
 	edge_attr = None
 	#x = torch.from_numpy(node_attributes.todense()).to(torch.float)
 	x = torch.from_numpy(node_attributes).to(torch.float)
+	print("!!!!!!!!!!!!!!!!!!!!!!!!!")
+	print(x)
 	node_graph_id = torch.from_numpy(node_graph_id).to(torch.long)
 	y = torch.from_numpy(graph_labels).to(torch.long)
 	_, y = y.unique(sorted=True, return_inverse=True)
