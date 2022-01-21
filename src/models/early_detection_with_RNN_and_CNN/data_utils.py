@@ -1,8 +1,4 @@
 import sys, os
-#sys.path.append('..')
-import utils
-
-#project_folder = os.path.join('../../../')
 
 import numpy as np
 import random
@@ -137,32 +133,6 @@ def get_new_data_in_range(all_data, all_year_month_ordered_keys, starting_key_id
         new_x = Subset(new_x, pos)
 
     return new_x, new_y
-
-def prepare_data(x,seq_len,data_opt):
-    #print("shape data current experiment: ", x.shape) 
-            
-    x1 = x[:, 0:seq_len, :]
-    
-    #print("shape data current experiment: ", x1.shape) 
-
-    shape = x1.shape
-    x1 = x1.reshape([shape[0] * shape[1], shape[2]])
-    #print("shape data current experiment: ", x1.shape)
-
-    if 'twitter' in data_opt:
-        pos_norm = [0,1,2,3,4,5,6,7,8]
-    else:
-        pos_norm = [0,1,2,3,4,5,6,7,8,9]
-
-    pos_norm = [0,1,2,3,4,5,6,7,8,9,10,11,12]
-
-    x1 = utils.normalize(x1, pos_norm)
-    
-    x1 = x1.reshape([shape[0], shape[1], shape[2]])
-
-    #print("x1 shape, ", x1.shape)
-
-    return x1
 
 def prepare_test_data(all_test_data,seq_len,data_opt):
     prepared_test_data = {}
