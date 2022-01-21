@@ -29,21 +29,21 @@ import time_model
 ################################################################################
 def main():
     nb_sample = 1
-    results_set = 'GCN' #specify characteristics current set of experiments
+    results_set = 'RNN_GNN' #specify characteristics current set of experiments
     ''' Results names
     GAT
     GCN
     RNN_GNN
     '''
     #data parameters
-    dataname =  'condor' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
+    dataname =  'gossipcop' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
     warm_start_years = [np.inf,np.inf] #warm-start data from year[0] (included) to year[1] (included)
                                    #to avoid warm-start: pick np.inf
     training_years = [2005,2021] #to train (after warm-start) from year[0] (included) to year[1] (included)
     
     #model parameters
     batch_size = 128 #128 conv #128 graph_model
-    model_type = "graph" #time #graph
+    model_type = "time" #time #graph
 
     train_val_test_split_ratio = [0.80, 0.20, 0.] #test is 0 because separated
     if model_type=="time":#time_model parameters
@@ -79,8 +79,8 @@ def main():
             torch.cuda.manual_seed(123)
 
     #Active Learning parameters
-    offline_AL = 15 #0 == Online, >0 == Number of iterations for Offline AL
-    AL_methods = ["uncertainty-margin", "random"] #["combined", "uncertainty-margin", "diversity-cluster", "random"] #don't use "_" to keep filename easily separable
+    offline_AL = 60 #0 == Online, >0 == Number of iterations for Offline AL
+    AL_methods = ["uncertainty-margin", "random", "diversity-cluster", "combined"] #["combined", "uncertainty-margin", "diversity-cluster", "random"] #don't use "_" to keep filename easily separable
     num_urls_k_list = [20]
     diversity_nums = [1,1,1] #centroids, outliers, randoms; used only if AL_method = diversity-cluster
     combined_AL_nums = [1,7,2] #ignored if AL_method is not "combined" #random, uncertainty, diversity
