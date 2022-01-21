@@ -1,11 +1,8 @@
-/data/features/condor_gossipcop_politifact/y.npy
-/data/features/condor_gossipcop_politifact/x.npy
-/data/features/gossipcop/y.npy
-/data/features/gossipcop/x.npy
-/data/features/condor/y.npy
-/data/features/condor/x.npy
+/data/*
 /src/models/early_detection_with_RNN_and_CNN/rc_model/*
 /src/models/GNN-FakeNews/data/gossipcop/*
+/src/models/GNN-FakeNews/data/condor/*
+/src/models/GNN-FakeNews/data/politifact/processed/pol_data_bert.pt
 /src/models/GNN-FakeNews/data/politifact/raw/new_bert_feature.npz
 /src/models/GNN-FakeNews/data/politifact/raw/new_bert_feature_old.npz
 

@@ -141,13 +141,13 @@ def test(loader):
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=777, help='random seed')
 # hyper-parameters
-parser.add_argument('--dataset', type=str, default='politifact', help='[politifact, gossipcop]')
+parser.add_argument('--dataset', type=str, default='condor', help='[politifact, gossipcop, condor]')
 parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--weight_decay', type=float, default=0.001, help='weight decay')
 parser.add_argument('--nhid', type=int, default=128, help='hidden size')
 parser.add_argument('--epochs', type=int, default=60, help='maximum number of epochs')
-parser.add_argument('--feature', type=str, default='profile', help='feature type, [profile, spacy, bert, content]')
+parser.add_argument('--feature', type=str, default='bert', help='feature type, [profile, spacy, bert, content]')
 
 args = parser.parse_args()
 torch.manual_seed(args.seed)

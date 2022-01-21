@@ -103,15 +103,15 @@ parser.add_argument('--seed', type=int, default=777, help='random seed')
 parser.add_argument('--device', type=str, default='cuda:0', help='specify cuda devices')
 
 # hyper-parameters
-parser.add_argument('--dataset', type=str, default='gossipcop', help='[politifact, gossipcop]')
+parser.add_argument('--dataset', type=str, default='gossipcop', help='[politifact, gossipcop, condor]')
 parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--weight_decay', type=float, default=0.01, help='weight decay')
 parser.add_argument('--nhid', type=int, default=128, help='hidden size')
-parser.add_argument('--epochs', type=int, default=40, help='maximum number of epochs')
+parser.add_argument('--epochs', type=int, default=60, help='maximum number of epochs')
 parser.add_argument('--concat', type=bool, default=False, help='whether concat news embedding and graph embedding')
 parser.add_argument('--multi_gpu', type=bool, default=False, help='multi-gpu mode')
-parser.add_argument('--feature', type=str, default='profile', help='feature type, [profile, spacy, bert, content]')
+parser.add_argument('--feature', type=str, default='bert', help='feature type, [profile, spacy, bert, content]')
 
 args = parser.parse_args()
 torch.manual_seed(args.seed)
@@ -125,8 +125,8 @@ args.num_features = dataset.num_features
 
 print(args)
 
-num_training = int(len(dataset) * 0.2)
-num_val = int(len(dataset) * 0.1)
+num_training = int(len(dataset) * 0.01)
+num_val = int(len(dataset) * 0.39)
 num_test = len(dataset) - (num_training + num_val)
 training_set, validation_set, test_set = random_split(dataset, [num_training, num_val, num_test])
 
