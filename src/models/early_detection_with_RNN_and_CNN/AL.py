@@ -29,17 +29,48 @@ def keep_sum_vec(vec, sm):
     return vec
 
 def merge_new_data(data, new_x, new_y, train_val_test_split_ratio,
-                   AL_method, keep_all_new, offline_AL, model,
+                   AL_method, keep_all_new,
+                   val_offline_num_urls, offline_AL,
+                   model, model_type,
                    num_urls_k, combined_AL_nums, diversity_nums,
-                   train_last_samples, val_last_samples, add_val_to_train,
-                   model_type):
+                   train_last_samples, val_last_samples, add_val_to_train):
     if keep_all_new: #data['x_train'] is None:
         new_ids = None
     else:
         if len(new_x)<=num_urls_k: #x
             new_ids = None
         else:
+            if val_offline_num_urls>0: #always random, maybe change?
+                print("HOPEFULLY GET VAL ONCE")
+                val_ids = AL_random(val_offline_num_urls)
+
+                if model_type=="time":
+                    val_x,val_y = new_x[val_ids],new_y[val_ids]
+                elif model_type=="graph":
+                    val_x = torch.utils.data.Subset(new_x, val_ids)
+                    val_y = None
+
+                if data['x_valid'] is None: #First batch
+                    data['x_valid'] = val_x
+                    data['y_valid'] = val_y
+                else:
+                    print("!!!!!!THIS SHOULDN'T HAPPEN!!!!!!")
+                    if model_type=="time":
+                        data['x_valid'] = np.concatenate([data['x_valid'],val_x])
+                        data['y_valid'] = np.concatenate([data['y_valid'],val_y])
+                    elif model_type=="graph":
+                        data['x_valid'] = ConcatDataset([data['x_valid'],val_x])
+                        data['y_valid'] = None
+
+                if model_type=="time":
+                    new_x = np.delete(new_x, val_ids, axis=0)
+                    new_y = np.delete(new_y, val_ids, axis=0)
+                elif model_type=="graph":
+                    new_range = np.array(list(set(range(len(new_x))).difference(set(list(val_ids)))))
+                    new_x = torch.utils.data.Subset(new_x, new_range)
+        
             take_until = min(len(new_x),num_urls_k)
+
             if AL_method == "random":
                 new_ids = AL_random(take_until)
             elif AL_method == "uncertainty-margin":
@@ -116,41 +147,47 @@ def merge_new_data(data, new_x, new_y, train_val_test_split_ratio,
         new_negatives = len(new_x) - new_positives
 
     if model_type=="time":
-        new_x_train,new_y_train,new_x_valid,new_y_valid = split_by_ratio(new_x, new_y, train_val_test_split_ratio) 
+        if offline_AL>0:
+            new_x_train,new_y_train = new_x, new_y
+        else:
+            new_x_train,new_y_train,new_x_valid,new_y_valid = split_by_ratio(new_x, new_y, train_val_test_split_ratio) 
     elif model_type=="graph":
-        num_train = int(train_val_test_split_ratio[0]*len(new_x))
-        num_val = len(new_x)-num_train
-        new_x_train, new_x_valid = random_split(new_x, [num_train, num_val])
-        new_y_train,new_y_valid = None,None
+        if offline_AL>0:
+            new_x_train = new_x
+            new_x_valid, new_y_train, new_y_valid = None,None,None
+        else:
+            num_train = int(train_val_test_split_ratio[0]*len(new_x))
+            num_val = len(new_x)-num_train
+            new_x_train, new_x_valid = random_split(new_x, [num_train, num_val])
+            new_y_train,new_y_valid = None,None
 
     #print(new_x_train.shape,new_x_valid.shape)
     if data['x_train'] is None: #First batch
         data['x_train'] = new_x_train
         data['y_train'] = new_y_train
         
-        data['x_valid'] = new_x_valid
-        data['y_valid'] = new_y_valid
-
-        #data['x_test'] = new_x_test
-        #data['y_test'] = new_y_test
+        if new_x_valid is not None:
+            data['x_valid'] = new_x_valid
+            data['y_valid'] = new_y_valid
     else:
-        if model_type=="time":
-            data['x_valid'] = np.concatenate([data['x_valid'],new_x_valid])
-            data['y_valid'] = np.concatenate([data['y_valid'],new_y_valid])
-        elif model_type=="graph":
-            data['x_valid'] = ConcatDataset([data['x_valid'],new_x_valid])
-            data['y_valid'] = None
+        if new_x_valid is not None:
+            if model_type=="time":
+                data['x_valid'] = np.concatenate([data['x_valid'],new_x_valid])
+                data['y_valid'] = np.concatenate([data['y_valid'],new_y_valid])
+            elif model_type=="graph":
+                data['x_valid'] = ConcatDataset([data['x_valid'],new_x_valid])
+                data['y_valid'] = None
 
-        if val_last_samples!=np.inf:
-            app_x = data['x_valid'][:-val_last_samples]
-            app_y = data['y_valid'][:-val_last_samples]
+            if val_last_samples!=np.inf:
+                app_x = data['x_valid'][:-val_last_samples]
+                app_y = data['y_valid'][:-val_last_samples]
 
-            if add_val_to_train:
-                data['x_train'] = np.concatenate([data['x_train'],app_x])
-                data['y_train'] = np.concatenate([data['y_train'],app_y])
-            
-            data['x_valid'] = data['x_valid'][-val_last_samples:]
-            data['y_valid'] = data['y_valid'][-val_last_samples:]
+                if add_val_to_train:
+                    data['x_train'] = np.concatenate([data['x_train'],app_x])
+                    data['y_train'] = np.concatenate([data['y_train'],app_y])
+                
+                data['x_valid'] = data['x_valid'][-val_last_samples:]
+                data['y_valid'] = data['y_valid'][-val_last_samples:]
             
         if model_type=="time":
             data['x_train'] = np.concatenate([data['x_train'],new_x_train])

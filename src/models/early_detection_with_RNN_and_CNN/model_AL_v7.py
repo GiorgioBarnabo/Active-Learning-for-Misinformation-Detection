@@ -8,12 +8,6 @@ from keras.models import load_model
 
 import tensorflow as tf
 
-'''
-sys.path.insert(1, os.getcwd()+'/utils')
-from data_loader import *
-from eval_helper import *
-'''
-
 import torch
 from torch_geometric.nn import DataParallel
 from torch_geometric.data import DataLoader, DataListLoader
@@ -35,8 +29,13 @@ def main():
     GCN
     RNN_GNN
     '''
+    
     #data parameters
+<<<<<<< HEAD
     dataname =  'gossipcop' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
+=======
+    dataname = 'politifact' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
+>>>>>>> 699c0532949a36ce9dd131c3ed9c991c853c7a64
     warm_start_years = [np.inf,np.inf] #warm-start data from year[0] (included) to year[1] (included)
                                    #to avoid warm-start: pick np.inf
     training_years = [2005,2021] #to train (after warm-start) from year[0] (included) to year[1] (included)
@@ -45,7 +44,7 @@ def main():
     batch_size = 128 #128 conv #128 graph_model
     model_type = "time" #time #graph
 
-    train_val_test_split_ratio = [0.80, 0.20, 0.] #test is 0 because separated
+    train_val_test_split_ratio = [0.90, 0.10, 0.] #test is 0 because separated
     if model_type=="time":#time_model parameters
         epochs = 50 #50 time_model
         seq_lens = [80]
@@ -79,11 +78,30 @@ def main():
             torch.cuda.manual_seed(123)
 
     #Active Learning parameters
+<<<<<<< HEAD
     offline_AL = 60 #0 == Online, >0 == Number of iterations for Offline AL
     AL_methods = ["uncertainty-margin", "random", "diversity-cluster", "combined"] #["combined", "uncertainty-margin", "diversity-cluster", "random"] #don't use "_" to keep filename easily separable
     num_urls_k_list = [20]
+=======
+    offline_AL = 15 #0 == Online, >0 == Number of iterations for Offline AL
+    tot_num_urls_list = [300]
+    AL_methods = ["uncertainty-margin", "random"] #["combined", "uncertainty-margin", "diversity-cluster", "random"] #don't use "_" to keep filename easily separable
+    #num_urls_k_list = [20]
+>>>>>>> 699c0532949a36ce9dd131c3ed9c991c853c7a64
     diversity_nums = [1,1,1] #centroids, outliers, randoms; used only if AL_method = diversity-cluster
     combined_AL_nums = [1,7,2] #ignored if AL_method is not "combined" #random, uncertainty, diversity
+
+    ####Compute num_urls_k_list:
+    num_urls_k_list = []
+    val_offline_num_urls_list = []
+    if offline_AL>0:
+        for tot_num_urls in tot_num_urls_list:
+            app = int(tot_num_urls*train_val_test_split_ratio[0]/offline_AL)
+            num_urls_k_list.append(app)
+            val_offline_num_urls_list.append(tot_num_urls-app*offline_AL)
+    else:
+        print("DEFINE num_urls_k_list yourself OR we have to change the code", error)
+    print("num_urls_k_list=:",num_urls_k_list)
 
     train_last_samples_list = [np.inf for k in num_urls_k_list] #Use np.inf to not discard training 
     val_last_samples_list = [np.inf for k in num_urls_k_list] #Use np.inf to not discard validation
@@ -218,8 +236,12 @@ def main():
                             print("NEW TRAINING DATA")
 
                             data, (new_x, new_y), (new_positives, new_negatives) = AL.merge_new_data(data, new_x, new_y, train_val_test_split_ratio,
-                                                AL_method, doing_warm_start and iteration_num==0, offline_AL, model, num_urls_k, combined_AL_nums, diversity_nums,
-                                                train_last_samples_list[enum_num_urls_k], val_last_samples_list[enum_num_urls_k], add_val_to_train, model_type)
+                                                                                                     AL_method, doing_warm_start and iteration_num==0,
+                                                                                                     val_offline_num_urls_list[enum_num_urls_k]*(offline_AL>0 and (iteration_num==(int(doing_warm_start)))),
+                                                                                                     offline_AL, model, model_type,
+                                                                                                     num_urls_k, combined_AL_nums, diversity_nums,
+                                                                                                     train_last_samples_list[enum_num_urls_k], val_last_samples_list[enum_num_urls_k],
+                                                                                                     add_val_to_train)
 
                             print("FINISH GETTING NEW TRAINING DATA")
 

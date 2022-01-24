@@ -92,7 +92,7 @@ class Model(torch.nn.Module):
 		best_val_loss = np.inf
 		best_model = None
 
-		patience = 10
+		patience = 100
 		iter_patience = 0
 
 		t = time.time()
