@@ -31,11 +31,7 @@ def main():
     '''
     
     #data parameters
-<<<<<<< HEAD
-    dataname =  'gossipcop' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
-=======
-    dataname = 'politifact' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
->>>>>>> 699c0532949a36ce9dd131c3ed9c991c853c7a64
+    dataname =  'condor' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
     warm_start_years = [np.inf,np.inf] #warm-start data from year[0] (included) to year[1] (included)
                                    #to avoid warm-start: pick np.inf
     training_years = [2005,2021] #to train (after warm-start) from year[0] (included) to year[1] (included)
@@ -44,18 +40,17 @@ def main():
     batch_size = 128 #128 conv #128 graph_model
     model_type = "time" #time #graph
 
-    train_val_test_split_ratio = [0.90, 0.10, 0.] #test is 0 because separated
+    train_val_test_split_ratio = [0.80, 0.20, 0.] #test is 0 because separated
     if model_type=="time":#time_model parameters
         epochs = 50 #50 time_model
         seq_lens = [80]
-
         graph_test_size = None
         graph_feature = None
     elif model_type=="graph": #graph_model parameters
-        epochs = 35 #35 graph_model
+        epochs = 30 #35 graph_model
         graph_test_size = 0.25 #because is not divided --> change if split data
         graph_feature = "bert" #profile, spacy, bert, content
-        graph_model_name = "gcn" #gcn, gat, sage
+        graph_model_name = "gat" #gcn, gat, sage
         seq_lens = [np.inf]
 
         
@@ -78,16 +73,10 @@ def main():
             torch.cuda.manual_seed(123)
 
     #Active Learning parameters
-<<<<<<< HEAD
-    offline_AL = 60 #0 == Online, >0 == Number of iterations for Offline AL
-    AL_methods = ["uncertainty-margin", "random", "diversity-cluster", "combined"] #["combined", "uncertainty-margin", "diversity-cluster", "random"] #don't use "_" to keep filename easily separable
-    num_urls_k_list = [20]
-=======
-    offline_AL = 15 #0 == Online, >0 == Number of iterations for Offline AL
-    tot_num_urls_list = [300]
+    offline_AL = 30 #0 == Online, >0 == Number of iterations for Offline AL
     AL_methods = ["uncertainty-margin", "random"] #["combined", "uncertainty-margin", "diversity-cluster", "random"] #don't use "_" to keep filename easily separable
     #num_urls_k_list = [20]
->>>>>>> 699c0532949a36ce9dd131c3ed9c991c853c7a64
+    tot_num_urls_list = [600]
     diversity_nums = [1,1,1] #centroids, outliers, randoms; used only if AL_method = diversity-cluster
     combined_AL_nums = [1,7,2] #ignored if AL_method is not "combined" #random, uncertainty, diversity
 
