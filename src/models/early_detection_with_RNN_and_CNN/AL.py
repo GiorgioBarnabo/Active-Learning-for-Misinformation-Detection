@@ -149,6 +149,7 @@ def merge_new_data(data, new_x, new_y, train_val_test_split_ratio,
     if model_type=="time":
         if offline_AL>0:
             new_x_train,new_y_train = new_x, new_y
+            new_x_valid,new_y_valid = None,None
         else:
             new_x_train,new_y_train,new_x_valid,new_y_valid = split_by_ratio(new_x, new_y, train_val_test_split_ratio) 
     elif model_type=="graph":

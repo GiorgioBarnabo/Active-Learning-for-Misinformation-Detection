@@ -31,7 +31,7 @@ def main():
     '''
     
     #data parameters
-    dataname =  'condor' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
+    dataname =  'gossipcop' #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
     warm_start_years = [np.inf,np.inf] #warm-start data from year[0] (included) to year[1] (included)
                                    #to avoid warm-start: pick np.inf
     training_years = [2005,2021] #to train (after warm-start) from year[0] (included) to year[1] (included)
@@ -73,10 +73,10 @@ def main():
             torch.cuda.manual_seed(123)
 
     #Active Learning parameters
-    offline_AL = 30 #0 == Online, >0 == Number of iterations for Offline AL
+    offline_AL = 60 #0 == Online, >0 == Number of iterations for Offline AL
     AL_methods = ["uncertainty-margin", "random"] #["combined", "uncertainty-margin", "diversity-cluster", "random"] #don't use "_" to keep filename easily separable
     #num_urls_k_list = [20]
-    tot_num_urls_list = [600]
+    tot_num_urls_list = [1200]
     diversity_nums = [1,1,1] #centroids, outliers, randoms; used only if AL_method = diversity-cluster
     combined_AL_nums = [1,7,2] #ignored if AL_method is not "combined" #random, uncertainty, diversity
 

@@ -2,6 +2,7 @@ import argparse
 import time
 from tqdm import tqdm
 import copy as cp
+from copy import deepcopy
 
 import torch
 import torch.nn.functional as F
@@ -99,17 +100,17 @@ parser.add_argument('--seed', type=int, default=777, help='random seed')
 parser.add_argument('--device', type=str, default='cuda:0', help='specify cuda devices')
 
 # hyper-parameters
-parser.add_argument('--dataset', type=str, default='gossipcop', help='[politifact, gossipcop, condor]')
+parser.add_argument('--dataset', type=str, default='politifact', help='[politifact, gossipcop, condor]')
 parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--weight_decay', type=float, default=0.01, help='weight decay')
 parser.add_argument('--nhid', type=int, default=128, help='hidden size')
 parser.add_argument('--dropout_ratio', type=float, default=0.0, help='dropout ratio')
-parser.add_argument('--epochs', type=int, default=60, help='maximum number of epochs')
+parser.add_argument('--epochs', type=int, default=50, help='maximum number of epochs')
 parser.add_argument('--concat', type=bool, default=True, help='whether concat news embedding and graph embedding')
 parser.add_argument('--multi_gpu', type=bool, default=False, help='multi-gpu mode')
 parser.add_argument('--feature', type=str, default='bert', help='feature type, [profile, spacy, bert, content]')
-parser.add_argument('--model', type=str, default='gat', help='model type, [gcn, gat, sage]')
+parser.add_argument('--model', type=str, default='gcn', help='model type, [gcn, gat, sage]')
 
 args = parser.parse_args()
 torch.manual_seed(args.seed)
@@ -123,8 +124,8 @@ args.num_features = dataset.num_features
 
 print(args)
 
-num_training = int(len(dataset) * 0.01)
-num_val = int(len(dataset) * 0.39)
+num_training = int(len(dataset) * 0.10)
+num_val = int(len(dataset) * 0.20)
 num_test = len(dataset) - (num_training + num_val)
 training_set, validation_set, test_set = random_split(dataset, [num_training, num_val, num_test])
 
@@ -151,6 +152,9 @@ if __name__ == '__main__':
 	val_loss_values = []
 	best_epoch = 0
 
+	best_val_loss = np.inf
+	best_model = None
+
 	t = time.time()
 	model.train()
 	for epoch in tqdm(range(args.epochs)):
@@ -172,10 +176,17 @@ if __name__ == '__main__':
 			out_log.append([F.softmax(out, dim=1), y])
 		acc_train, _, _, _, recall_train, auc_train, _ = eval_deep(out_log, train_loader)
 		[acc_val, _, _, _, recall_val, auc_val, _], loss_val = compute_test(val_loader)
+		
+		if loss_val<best_val_loss:
+			best_val_loss = loss_val
+			best_model = deepcopy(model)
+
 		print(f'loss_train: {loss_train:.4f}, acc_train: {acc_train:.4f},'
 			  f' recall_train: {recall_train:.4f}, auc_train: {auc_train:.4f},'
 			  f' loss_val: {loss_val:.4f}, acc_val: {acc_val:.4f},'
 			  f' recall_val: {recall_val:.4f}, auc_val: {auc_val:.4f}')
+
+	model = best_model
 
 	[acc, f1_macro, f1_micro, precision, recall, auc, ap], test_loss = compute_test(test_loader, verbose=False)
 	print(f'Test set results: acc: {acc:.4f}, f1_macro: {f1_macro:.4f}, f1_micro: {f1_micro:.4f}, '
