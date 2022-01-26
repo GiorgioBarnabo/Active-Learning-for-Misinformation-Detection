@@ -104,19 +104,19 @@ def model_evaluate(model, x, y):
 
 def main():
     #seq_len = 35
-    epochs = 100
+    epochs = 30
     batch_size = 128
     nb_sample = 1
-    seq_lens = [5, 10, 20, 40, 60, 80]
-    data_opt =  'condor' #'twitter'
+    seq_lens = [100]
+    data_opt =  'politifact' #'twitter'
     
     if data_opt =='twitter':
         data_name = 'twitter15'
     else:
         data_name = 'weibo'
     
-    x = np.load(os.path.join(project_folder, 'data', 'features', data_opt, 'x.npy'))
-    y = np.load(os.path.join(project_folder, 'data', 'features', data_opt, 'y.npy'))
+    x = np.load(os.path.join(project_folder, 'data', 'features', data_opt, 'all_x.npy'))
+    y = np.load(os.path.join(project_folder, 'data', 'features', data_opt, 'all_y.npy'))
     print("data shapes: ", x.shape, y.shape)
     
     n = x.shape[0]
@@ -125,15 +125,19 @@ def main():
     pos = np.arange(n)
 
     print("total number of rows", n)
-    
-    time.sleep()
 
     rs_avg = {}
     for seq_len in seq_lens:
         rs_avg[seq_len] = [0 for i in range(7)]
     
-    split_ratio = [0.01, 0.39, 0.60]
+    split_ratio = [0.05, 0.35, 0.60]
     
+    f = open(os.path.join(project_folder, 'src', 'models', 'early_detection_with_RNN_and_CNN', 'results', 'current_results.txt'), 'a')
+    info = '{}={}\tepochs={}\ttrain={:.2f}\tval={:.2f}\ttest={:.2f}\n'.format(data_opt, n, epochs, split_ratio[0], split_ratio[1], split_ratio[2])
+    f.write(info)
+    f.close()
+
+
     for sample in range(nb_sample):
 
         print('sample {}'.format(sample))

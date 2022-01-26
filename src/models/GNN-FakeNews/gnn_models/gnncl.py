@@ -8,6 +8,7 @@ from torch_geometric.data import DenseDataLoader
 import torch_geometric.transforms as T
 from torch_geometric.nn import DenseSAGEConv, dense_diff_pool
 from torch.utils.data import random_split
+from copy import deepcopy
 
 import sys
 # insert at 1, 0 is the script path (or '' in REPL)
@@ -143,12 +144,12 @@ def test(loader):
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=777, help='random seed')
 # hyper-parameters
-parser.add_argument('--dataset', type=str, default='condor', help='[politifact, gossipcop, condor]')
+parser.add_argument('--dataset', type=str, default='politifact', help='[politifact, gossipcop, condor]')
 parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--weight_decay', type=float, default=0.001, help='weight decay')
 parser.add_argument('--nhid', type=int, default=128, help='hidden size')
-parser.add_argument('--epochs', type=int, default=60, help='maximum number of epochs')
+parser.add_argument('--epochs', type=int, default=1, help='maximum number of epochs')
 parser.add_argument('--feature', type=str, default='bert', help='feature type, [profile, spacy, bert, content]')
 
 args = parser.parse_args()
@@ -167,8 +168,10 @@ dataset = FNNDataset(root='data', feature=args.feature, empty=False, name=args.d
 
 print(args)
 
-num_training = int(len(dataset) * 0.2)
-num_val = int(len(dataset) * 0.1)
+split_ratio = [0.10, 0.20, 0.70]
+
+num_training = int(len(dataset) * split_ratio[0])
+num_val = int(len(dataset) * split_ratio[1])
 num_test = len(dataset) - (num_training + num_val)
 training_set, validation_set, test_set = random_split(dataset, [num_training, num_val, num_test])
 
@@ -179,6 +182,11 @@ test_loader = DenseDataLoader(test_set, batch_size=args.batch_size, shuffle=Fals
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = Net(in_channels=dataset.num_features, num_classes=dataset.num_classes).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+f = open(os.path.join(project_folder, 'src', 'models', 'GNN-FakeNews', 'results', 'gnncl_results.txt'), 'a')
+info = '{}={}\tepochs={}\ttrain={:.2f}\tval={:.2f}\ttest={:.2f}\n'.format(args.dataset, len(dataset), args.epochs, split_ratio[0], split_ratio[1], split_ratio[2])
+f.write(info)
+f.close()
 
 best_val_loss = np.inf
 best_model = None

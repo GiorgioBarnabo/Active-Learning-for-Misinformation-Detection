@@ -4,6 +4,7 @@ sys.path.append(os.getcwd())
 import argparse
 from tqdm import tqdm
 import copy as cp
+from copy import deepcopy
  
 import torch
 from torch.utils.data import random_split
@@ -147,14 +148,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=777, help='random seed')
 parser.add_argument('--device', type=str, default='cuda:0', help='specify cuda devices')
 # hyper-parameters
-parser.add_argument('--dataset', type=str, default='gossipcop', help='[politifact, gossipcop, condor]')
+parser.add_argument('--dataset', type=str, default='politifact', help='[politifact, gossipcop, condor]')
 parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 parser.add_argument('--lr', type=float, default=0.01, help='learning rate')
 parser.add_argument('--weight_decay', type=float, default=0.001, help='weight decay')
 parser.add_argument('--nhid', type=int, default=128, help='hidden size')
 parser.add_argument('--TDdroprate', type=float, default=0.2, help='dropout ratio')
 parser.add_argument('--BUdroprate', type=float, default=0.2, help='dropout ratio')
-parser.add_argument('--epochs', type=int, default=50, help='maximum number of epochs')
+parser.add_argument('--epochs', type=int, default=1, help='maximum number of epochs')
 parser.add_argument('--multi_gpu', type=bool, default=False, help='multi-gpu mode')
 parser.add_argument('--feature', type=str, default='bert', help='feature type, [profile, spacy, bert, content]')
 
@@ -171,8 +172,10 @@ args.num_features = dataset.num_features
 
 print(args)
 
-num_training = int(len(dataset) * 0.01)
-num_val = int(len(dataset) * 0.39)
+split_ratio = [0.10, 0.20, 0.70]
+
+num_training = int(len(dataset) * split_ratio[0])
+num_val = int(len(dataset) * split_ratio[1])
 num_test = len(dataset) - (num_training + num_val)
 training_set, validation_set, test_set = random_split(dataset, [num_training, num_val, num_test])
 
@@ -209,6 +212,10 @@ else:
 		{'params': model.module.BUrumorGCN.conv2.parameters(), 'lr': args.lr / 5}
 	], lr=args.lr, weight_decay=args.weight_decay)
 
+f = open(os.path.join(project_folder, 'src', 'models', 'GNN-FakeNews', 'results', 'bigcn_results.txt'), 'a')
+info = '{}={}\tepochs={}\ttrain={:.2f}\tval={:.2f}\ttest={:.2f}\n'.format(args.dataset, len(dataset), args.epochs, split_ratio[0], split_ratio[1], split_ratio[2])
+f.write(info)
+f.close()
 
 if __name__ == "__main__":
 
