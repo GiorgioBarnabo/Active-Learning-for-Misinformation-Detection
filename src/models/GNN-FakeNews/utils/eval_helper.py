@@ -72,3 +72,24 @@ def new_compute_test(model, loader, args, verbose=False):
 		real_y += list(y.cpu().numpy())
 
 	return compute_metrics(pred_y, real_y)
+
+@torch.no_grad()
+def new_gnncl_compute_test(model, loader, args, verbose=False):
+	model.eval()
+	loss_test = 0.0
+	pred_y = []
+	real_y = []
+	for data in loader:
+		if not args.multi_gpu:
+			data = data.to(args.device)
+		out, _, _ = model(data.x, data.adj, data.mask)
+		if args.multi_gpu:
+			y = torch.cat([d.y.unsqueeze(0) for d in data]).squeeze().to(out.device)
+		else:
+			y = data.y
+		if verbose:
+			print(F.softmax(out, dim=1).cpu().numpy())
+		pred_y += list(F.softmax(out, dim=1).cpu().numpy()[:,1]>0.5)
+		real_y += list(y.cpu().numpy())
+
+	return compute_metrics(pred_y, real_y)

@@ -2,3 +2,13 @@ politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
 politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
 politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
 politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
+politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
+politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
+politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
+politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
+politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
+politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
+politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
+politifact	0.5023	0.5077	0.8761	0.6429	0.4615	0.1111	0.1791
+politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
+politifact	0.5023	0.5077	0.8761	0.6429	0.4615	0.1111	0.1791

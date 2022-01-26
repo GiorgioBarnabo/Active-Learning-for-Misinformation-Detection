@@ -143,13 +143,16 @@ def test(loader):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=777, help='random seed')
+parser.add_argument('--device', type=str, default='cuda:0', help='specify cuda devices')
+
 # hyper-parameters
 parser.add_argument('--dataset', type=str, default='politifact', help='[politifact, gossipcop, condor]')
 parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--weight_decay', type=float, default=0.001, help='weight decay')
 parser.add_argument('--nhid', type=int, default=128, help='hidden size')
-parser.add_argument('--epochs', type=int, default=1, help='maximum number of epochs')
+parser.add_argument('--epochs', type=int, default=35, help='maximum number of epochs')
+parser.add_argument('--multi_gpu', type=bool, default=False, help='multi-gpu mode')
 parser.add_argument('--feature', type=str, default='bert', help='feature type, [profile, spacy, bert, content]')
 
 args = parser.parse_args()
@@ -213,7 +216,7 @@ print(f'Test set results: acc: {acc:.4f}, f1_macro: {f1_macro:.4f}, f1_micro: {f
 		f'precision: {precision:.4f}, recall: {recall:.4f}, auc: {auc:.4f}, ap: {ap:.4f}')
 '''
 
-rs = new_compute_test(model, test_loader, args, verbose=False)
+rs = new_gnncl_compute_test(model, test_loader, args, verbose=False)
 
 f = open(os.path.join(project_folder, 'src', 'models', 'GNN-FakeNews', 'results', 'gnncl_results.txt'), 'a')
 info = '{}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\n'.format(args.dataset, rs[0], rs[1], rs[2], rs[3], rs[4], rs[5], rs[6])

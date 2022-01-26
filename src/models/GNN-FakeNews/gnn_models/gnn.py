@@ -1,7 +1,6 @@
 import argparse
 import time
 from tqdm import tqdm
-import copy as cp
 from copy import deepcopy
 
 import torch
