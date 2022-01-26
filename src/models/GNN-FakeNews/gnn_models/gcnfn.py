@@ -18,6 +18,8 @@ sys.path.insert(1, '')
 from utils.data_loader import *
 from utils.eval_helper import *
 
+project_folder = os.path.join('../../../')
+
 """
 
 GCNFN is implemented using two GCN layers and one mean-pooling layer as the graph encoder; 
@@ -185,6 +187,16 @@ if __name__ == '__main__':
 
 	model = best_model
 	
+	'''
 	[acc, f1_macro, f1_micro, precision, recall, auc, ap], test_loss = compute_test(test_loader, verbose=False)
-	print(f'Test set results: acc: {acc:.4f}, f1_macro: {f1_macro:.4f}, f1_micro: {f1_micro:.4f}, '
+	print(f'Test set results: acc: {acc:.4f}, f1_macro: {f1_macro:.4f}, f1_micro: {f1_micro:.4f},'
 		  f'precision: {precision:.4f}, recall: {recall:.4f}, auc: {auc:.4f}, ap: {ap:.4f}')
+	'''
+
+	rs = new_compute_test(model, test_loader, args, verbose=False)
+	
+	f = open(os.path.join(project_folder, 'src', 'models', 'GNN-FakeNews', 'results', 'gcnfn_results.txt'), 'a')
+	info = '{}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\n'.format(args.dataset, rs[0], rs[1], rs[2], rs[3], rs[4], rs[5], rs[6])
+	f.write(info)
+	f.close()
+	print(info)
