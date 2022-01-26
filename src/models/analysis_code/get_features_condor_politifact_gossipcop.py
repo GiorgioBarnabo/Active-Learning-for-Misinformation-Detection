@@ -119,15 +119,15 @@ df = pd.read_csv("../../../data/final_dataset_condor_gossipcop_politifact.csv")
 #df_filtered = df[df['timestamp_first_tweet'] > 1483228799]
 #df_filtered = df_filtered[df_filtered['timestamp_first_tweet'] < 1577836801
 
-df = df[df['dataset'] == 'poli']
+df = df[df['dataset'] == 'condor']
 
-with open('../../../../condor_test/data/processed/all_users_features.pickle', "rb") as fp:
-    all_users = pkl.load(fp)
+# with open('../../../../condor_test/data/processed/all_users_features.pickle', "rb") as fp:
+#     all_users = pkl.load(fp)
 
-already_done = os.listdir('../../../../condor_test/data/processed/url_to_user_sequence/')
+# already_done = os.listdir('../../../../condor_test/data/processed/url_to_user_sequence/')
 
-with open("../../../data/poli_evaluation_dataset_ids.txt", "rb") as fp:
-   evaluation_dataset_ids = pkl.load(fp)
+# with open("../../../data/poli_evaluation_dataset_ids.txt", "rb") as fp:
+#    evaluation_dataset_ids = pkl.load(fp)
 
 # months = df['month_year'].unique()
 
@@ -170,6 +170,9 @@ with open("../../../data/poli_evaluation_dataset_ids.txt", "rb") as fp:
 #     np.save('../../../data/features/condor/eval_{}_y.npy'.format(month), y)
 
 
+already_done = os.listdir('../../../../condor_test/data/processed/url_to_user_sequence/')
+all_users_dir = '../../../../condor_test/data/raw/all_twitter_accounts/user_profiles/'
+all_users = os.listdir('../../../../condor_test/data/raw/all_twitter_accounts/user_profiles/')
 
 y = []
 x = []
@@ -179,8 +182,8 @@ j = 0
 for index, row in df.iterrows():
     url_id = row["id"]
     if '{}.pickle'.format(url_id) not in already_done: continue
-    if url_id not in evaluation_dataset_ids: continue
-    evaluation_dataset_ids.append(url_id)
+    # if url_id not in evaluation_dataset_ids: continue
+    # evaluation_dataset_ids.append(url_id)
     j+=1
     print(j)
     with open('../../../../condor_test/data/processed/url_to_user_sequence/{}.pickle'.format(url_id), "rb") as fp: 
@@ -190,10 +193,12 @@ for index, row in df.iterrows():
     url_features = []
     for spreading_user in url:
         user_id = spreading_user[0]
-        if i < 100 and user_id in all_users.keys():
-            url_features.append(all_users[user_id])
+        if i < 1000 and '{}.json'.format(user_id) in all_users:
+            with open(os.path.join(all_users_dir, user_id+'.json')) as json_file:
+                user_id_features = json.load(json_file)
+            url_features.append(user_id_features['user_features'])
             i += 1
-    while i < 100:
+    while i < 1000:
         url_features.append([0]*13)
         i += 1
     x.append(url_features)
@@ -204,6 +209,6 @@ y = np.array(y)
 print('x shape', x.shape)
 print('y shape', y.shape)
 
-np.save('../../../data/features/politifact/evaluation_x.npy', x)
-np.save('../../../data/features/politifact/evaluation_y.npy', y)
+np.save('../../../data/features/condor/all_x.npy', x)
+np.save('../../../data/features/condor/all_y.npy', y)
 

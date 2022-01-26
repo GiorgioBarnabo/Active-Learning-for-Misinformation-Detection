@@ -148,6 +148,10 @@ optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.w
 
 if __name__ == '__main__':
 	# Model training
+	
+	best_val_loss = np.inf
+	best_model = None
+	
 	t = time.time()
 	model.train()
 	for epoch in tqdm(range(args.epochs)):
@@ -169,11 +173,18 @@ if __name__ == '__main__':
 			out_log.append([F.softmax(out, dim=1), y])
 		acc_train, _, _, _, recall_train, auc_train, _ = eval_deep(out_log, train_loader)
 		[acc_val, _, _, _, recall_val, auc_val, _], loss_val = compute_test(val_loader)
+		
+		if loss_val<best_val_loss:
+			best_val_loss = loss_val
+			best_model = deepcopy(model)
+
 		print(f'loss_train: {loss_train:.4f}, acc_train: {acc_train:.4f},'
 			  f' recall_train: {recall_train:.4f}, auc_train: {auc_train:.4f},'
 			  f' loss_val: {loss_val:.4f}, acc_val: {acc_val:.4f},'
 			  f' recall_val: {recall_val:.4f}, auc_val: {auc_val:.4f}')
 
+	model = best_model
+	
 	[acc, f1_macro, f1_micro, precision, recall, auc, ap], test_loss = compute_test(test_loader, verbose=False)
 	print(f'Test set results: acc: {acc:.4f}, f1_macro: {f1_macro:.4f}, f1_micro: {f1_micro:.4f}, '
 		  f'precision: {precision:.4f}, recall: {recall:.4f}, auc: {auc:.4f}, ap: {ap:.4f}')

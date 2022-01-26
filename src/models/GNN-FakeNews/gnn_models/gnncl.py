@@ -178,14 +178,24 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = Net(in_channels=dataset.num_features, num_classes=dataset.num_classes).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
+best_val_loss = np.inf
+best_model = None
 
 for epoch in tqdm(range(args.epochs)):
 	[acc_train, _, _, _, recall_train, auc_train, _], loss_train = train()
 	[acc_val, _, _, _, recall_val, auc_val, _], loss_val = test(val_loader)
+	
+	if loss_val<best_val_loss:
+		best_val_loss = loss_val
+		best_model = deepcopy(model)
+	
 	print(f'loss_train: {loss_train:.4f}, acc_train: {acc_train:.4f},'
 		  f' recall_train: {recall_train:.4f}, auc_train: {auc_train:.4f},'
 		  f' loss_val: {loss_val:.4f}, acc_val: {acc_val:.4f},'
 		  f' recall_val: {recall_val:.4f}, auc_val: {auc_val:.4f}')
+
+
+model = best_model
 
 [acc, f1_macro, f1_micro, precision, recall, auc, ap], test_loss = test(test_loader)
 print(f'Test set results: acc: {acc:.4f}, f1_macro: {f1_macro:.4f}, f1_micro: {f1_micro:.4f}, '
