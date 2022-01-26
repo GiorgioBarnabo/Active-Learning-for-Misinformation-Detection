@@ -193,6 +193,7 @@ f.close()
 
 best_val_loss = np.inf
 best_model = None
+patient = 0
 
 for epoch in tqdm(range(args.epochs)):
 	[acc_train, _, _, _, recall_train, auc_train, _], loss_train = train()
@@ -201,6 +202,11 @@ for epoch in tqdm(range(args.epochs)):
 	if loss_val<best_val_loss:
 		best_val_loss = loss_val
 		best_model = deepcopy(model)
+		patient = 0
+	else:
+		patient += 1
+		if patient >=10:
+			break
 	
 	print(f'loss_train: {loss_train:.4f}, acc_train: {acc_train:.4f},'
 		  f' recall_train: {recall_train:.4f}, auc_train: {auc_train:.4f},'

@@ -160,6 +160,7 @@ if __name__ == '__main__':
 	
 	best_val_loss = np.inf
 	best_model = None
+	patient = 0
 	
 	t = time.time()
 	model.train()
@@ -186,6 +187,11 @@ if __name__ == '__main__':
 		if loss_val<best_val_loss:
 			best_val_loss = loss_val
 			best_model = deepcopy(model)
+			patient = 0
+		else:
+			patient += 1
+			if patient >=10:
+				break
 
 		print(f'loss_train: {loss_train:.4f}, acc_train: {acc_train:.4f},'
 			  f' recall_train: {recall_train:.4f}, auc_train: {auc_train:.4f},'
