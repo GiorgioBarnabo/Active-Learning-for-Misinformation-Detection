@@ -112,9 +112,9 @@ parser.add_argument('--feature', type=str, default='bert', help='feature type, [
 parser.add_argument('--model', type=str, default='gcn', help='model type, [gcn, gat, sage]')
 
 args = parser.parse_args()
-torch.manual_seed(args.seed)
-if torch.cuda.is_available():
-	torch.cuda.manual_seed(args.seed)
+# torch.manual_seed(args.seed)
+# if torch.cuda.is_available():
+# 	torch.cuda.manual_seed(args.seed)
 
 dataset = FNNDataset(root='data', feature=args.feature, empty=False, name=args.dataset, transform=ToUndirected())
 
@@ -124,6 +124,11 @@ args.num_features = dataset.num_features
 print(args)
 
 split_ratio = [0.10, 0.20, 0.70]
+
+# [0.05, 0.35, 0.60]
+# [0.10, 0.30, 0.60]
+# [0.20, 0.30, 0.50]
+# [0.50, 0.20, 0.30]
 
 num_training = int(len(dataset) * split_ratio[0])
 num_val = int(len(dataset) * split_ratio[1])
