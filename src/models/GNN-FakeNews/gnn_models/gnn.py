@@ -160,7 +160,7 @@ f.close()
 if __name__ == '__main__':
 	# Model training
 
-	for data_set in ['politifact', 'condor', 'gossipcop']:
+	for data_set in ['condor', 'gossipcop']:  #'politifact'
 
 		args.dataset = data_set
 	

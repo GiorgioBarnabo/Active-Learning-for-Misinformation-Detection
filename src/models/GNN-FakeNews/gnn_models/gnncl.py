@@ -160,7 +160,7 @@ args = parser.parse_args()
 # if torch.cuda.is_available():
 # 	torch.cuda.manual_seed(args.seed)
 
-for data_set in ['politifact', 'condor', 'gossipcop']:
+for data_set in ['condor', 'gossipcop']:  #'politifact'
 
 	args.dataset = data_set
 
