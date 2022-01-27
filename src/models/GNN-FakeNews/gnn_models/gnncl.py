@@ -142,7 +142,7 @@ def test(loader):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--seed', type=int, default=777, help='random seed')
+#parser.add_argument('--seed', type=int, default=777, help='random seed')
 parser.add_argument('--device', type=str, default='cuda:0', help='specify cuda devices')
 
 # hyper-parameters
@@ -151,7 +151,7 @@ parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--weight_decay', type=float, default=0.001, help='weight decay')
 parser.add_argument('--nhid', type=int, default=128, help='hidden size')
-parser.add_argument('--epochs', type=int, default=35, help='maximum number of epochs')
+parser.add_argument('--epochs', type=int, default=100, help='maximum number of epochs')
 parser.add_argument('--multi_gpu', type=bool, default=False, help='multi-gpu mode')
 parser.add_argument('--feature', type=str, default='bert', help='feature type, [profile, spacy, bert, content]')
 
@@ -160,77 +160,82 @@ args = parser.parse_args()
 # if torch.cuda.is_available():
 # 	torch.cuda.manual_seed(args.seed)
 
-if args.dataset == 'politifact':
-	max_nodes = 500
-else:
-	max_nodes = 200 
+for data_set in ['politifact', 'condor', 'gossipcop']:
 
+	args.dataset = data_set
 
-dataset = FNNDataset(root='data', feature=args.feature, empty=False, name=args.dataset,
-					 transform=T.ToDense(max_nodes), pre_transform=ToUndirected())
-
-print(args)
-
-split_ratio = [0.10, 0.20, 0.70]
-
-# [0.05, 0.35, 0.60]
-# [0.10, 0.30, 0.60]
-# [0.20, 0.30, 0.50]
-# [0.50, 0.20, 0.30]
-
-num_training = int(len(dataset) * split_ratio[0])
-num_val = int(len(dataset) * split_ratio[1])
-num_test = len(dataset) - (num_training + num_val)
-training_set, validation_set, test_set = random_split(dataset, [num_training, num_val, num_test])
-
-train_loader = DenseDataLoader(training_set, batch_size=args.batch_size, shuffle=True)
-val_loader = DenseDataLoader(validation_set, batch_size=args.batch_size, shuffle=False)
-test_loader = DenseDataLoader(test_set, batch_size=args.batch_size, shuffle=False)
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = Net(in_channels=dataset.num_features, num_classes=dataset.num_classes).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
-f = open(os.path.join(project_folder, 'src', 'models', 'GNN-FakeNews', 'results', 'gnncl_results.txt'), 'a')
-info = '{}={}\tepochs={}\ttrain={:.2f}\tval={:.2f}\ttest={:.2f}\n'.format(args.dataset, len(dataset), args.epochs, split_ratio[0], split_ratio[1], split_ratio[2])
-f.write(info)
-f.close()
-
-best_val_loss = np.inf
-best_model = None
-patient = 0
-
-for epoch in tqdm(range(args.epochs)):
-	[acc_train, _, _, _, recall_train, auc_train, _], loss_train = train()
-	[acc_val, _, _, _, recall_val, auc_val, _], loss_val = test(val_loader)
-	
-	if loss_val<best_val_loss:
-		best_val_loss = loss_val
-		best_model = deepcopy(model)
-		patient = 0
+	if args.dataset == 'politifact':
+		max_nodes = 500
 	else:
-		patient += 1
-		if patient >=10:
-			break
+		max_nodes = 200 
+
+
+	dataset = FNNDataset(root='data', feature=args.feature, empty=False, name=args.dataset,
+						transform=T.ToDense(max_nodes), pre_transform=ToUndirected())
+
+	print(args)
+
+	split_ratios = [[0.05, 0.35, 0.60], [0.10, 0.30, 0.60], [0.20, 0.30, 0.50], [0.50, 0.20, 0.30]]
 	
-	print(f'loss_train: {loss_train:.4f}, acc_train: {acc_train:.4f},'
-		  f' recall_train: {recall_train:.4f}, auc_train: {auc_train:.4f},'
-		  f' loss_val: {loss_val:.4f}, acc_val: {acc_val:.4f},'
-		  f' recall_val: {recall_val:.4f}, auc_val: {auc_val:.4f}')
+	for train_val_test in split_ratios:
+		
+		split_ratio = train_val_test
+
+		num_training = int(len(dataset) * split_ratio[0])
+		num_val = int(len(dataset) * split_ratio[1])
+		num_test = len(dataset) - (num_training + num_val)
+		training_set, validation_set, test_set = random_split(dataset, [num_training, num_val, num_test])
+
+		train_loader = DenseDataLoader(training_set, batch_size=args.batch_size, shuffle=True)
+		val_loader = DenseDataLoader(validation_set, batch_size=args.batch_size, shuffle=False)
+		test_loader = DenseDataLoader(test_set, batch_size=args.batch_size, shuffle=False)
+
+		f = open(os.path.join(project_folder, 'src', 'models', 'GNN-FakeNews', 'results', 'gnncl_results.txt'), 'a')
+		info = '{}={}\tepochs={}\ttrain={:.2f}\tval={:.2f}\ttest={:.2f}\n'.format(args.dataset, len(dataset), args.epochs, split_ratio[0], split_ratio[1], split_ratio[2])
+		f.write(info)
+		f.close()
+
+		for i in range(5):
+
+			device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+			model = Net(in_channels=dataset.num_features, num_classes=dataset.num_classes).to(device)
+			optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+			best_val_loss = np.inf
+			best_model = None
+			patient = 0
+
+			for epoch in tqdm(range(args.epochs)):
+				[acc_train, _, _, _, recall_train, auc_train, _], loss_train = train()
+				[acc_val, _, _, _, recall_val, auc_val, _], loss_val = test(val_loader)
+				
+				if loss_val<best_val_loss:
+					best_val_loss = loss_val
+					best_model = deepcopy(model)
+					patient = 0
+				else:
+					patient += 1
+					if patient >=10:
+						break
+				
+				print(f'loss_train: {loss_train:.4f}, acc_train: {acc_train:.4f},'
+					f' recall_train: {recall_train:.4f}, auc_train: {auc_train:.4f},'
+					f' loss_val: {loss_val:.4f}, acc_val: {acc_val:.4f},'
+					f' recall_val: {recall_val:.4f}, auc_val: {auc_val:.4f}')
 
 
-model = best_model
+			model = best_model
 
-'''
-[acc, f1_macro, f1_micro, precision, recall, auc, ap], test_loss = compute_test(test_loader, verbose=False)
-print(f'Test set results: acc: {acc:.4f}, f1_macro: {f1_macro:.4f}, f1_micro: {f1_micro:.4f},'
-		f'precision: {precision:.4f}, recall: {recall:.4f}, auc: {auc:.4f}, ap: {ap:.4f}')
-'''
+			'''
+			[acc, f1_macro, f1_micro, precision, recall, auc, ap], test_loss = compute_test(test_loader, verbose=False)
+			print(f'Test set results: acc: {acc:.4f}, f1_macro: {f1_macro:.4f}, f1_micro: {f1_micro:.4f},'
+					f'precision: {precision:.4f}, recall: {recall:.4f}, auc: {auc:.4f}, ap: {ap:.4f}')
+			'''
 
-rs = new_gnncl_compute_test(model, test_loader, args, verbose=False)
+			rs = new_gnncl_compute_test(model, test_loader, args, verbose=False)
 
-f = open(os.path.join(project_folder, 'src', 'models', 'GNN-FakeNews', 'results', 'gnncl_results.txt'), 'a')
-info = '{}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\n'.format(args.dataset, rs[0], rs[1], rs[2], rs[3], rs[4], rs[5], rs[6])
-f.write(info)
-f.close()
-print(info)
+			f = open(os.path.join(project_folder, 'src', 'models', 'GNN-FakeNews', 'results', 'gnncl_results.txt'), 'a')
+			info = '{}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\n'.format(args.dataset, rs[0], rs[1], rs[2], rs[3], rs[4], rs[5], rs[6])
+			f.write(info)
+			f.close()
+			print(info)

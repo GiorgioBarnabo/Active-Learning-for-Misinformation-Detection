@@ -115,7 +115,7 @@ def main():
     else:
         data_name = 'weibo'
     
-    for dataset in ['politifact', 'condor', 'gossipcop']:
+    for dataset in ['politifact', 'gossipcop', 'condor']:
         
         data_opt = dataset
 
