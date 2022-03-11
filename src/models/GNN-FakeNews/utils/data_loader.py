@@ -74,7 +74,9 @@ def read_graph_data(folder, feature):
 	_, y = y.unique(sorted=True, return_inverse=True)
 
 	num_nodes = edge_index.max().item() + 1 if x is None else x.size(0)
+	# Adds a self-loop to every node in the graph given by edge_index.
 	edge_index, edge_attr = add_self_loops(edge_index, edge_attr)
+	# Row-wise sorts edge_index and removes its duplicated entries.
 	edge_index, edge_attr = coalesce(edge_index, edge_attr, num_nodes, num_nodes)
 
 	data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
