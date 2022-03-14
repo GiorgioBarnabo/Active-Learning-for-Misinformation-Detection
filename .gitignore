@@ -1,4 +1,7 @@
-/data/*
+/data/condor/*
+/data/gossipcop/*
+/data/politifact/raw/*
+/data/politifact/processed/pol_data_bert.pt
 #/data/condor/*
 #/data/gossipcop/*
 /old_code/*
