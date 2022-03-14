@@ -2,6 +2,7 @@
 /data/gossipcop/*
 /data/politifact/raw/*
 /data/politifact/processed/pol_data_bert.pt
+/data/politifact/train_val_test_graphs/*
 #/data/condor/*
 #/data/gossipcop/*
 /old_code/*

@@ -59,8 +59,8 @@ def read_graph_data(folder, feature):
 	#node_attributes = sp.load_npz(folder + f'new_{feature}_feature.npz')
 	node_attributes = np.load(folder + f'new_{feature}_feature.npz')["arr_0"]
 	edge_index = read_file(folder, 'A', torch.long).t()
-	print(edge_index)
-	print(edge_index.shape)
+	#print(edge_index)
+	#print(edge_index.shape)
 	node_graph_id = np.load(folder + 'node_graph_id.npy')
 	graph_labels = np.load(folder + 'graph_labels.npy')
 
