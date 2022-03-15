@@ -1,2 +1,0 @@
-politifact=314	epochs=1	train=0.10	val=0.20	test=0.70
-politifact	0.6697	0.8333	0.4425	0.5780	0.6087	0.9074	0.7286
