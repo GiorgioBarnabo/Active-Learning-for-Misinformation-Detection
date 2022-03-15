@@ -13,10 +13,9 @@ from torch_geometric.nn import DataParallel
 from torch_geometric.data import DataLoader, DataListLoader
 
 #import our scripts
-import AL
-import data_utils
-import graph_model
-import time_model
+import new_utils.AL
+import new_utils.data_utils
+import new_utils.graph_model
 
 
 def prepare_graph_parser(cfg):
