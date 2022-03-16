@@ -3,6 +3,8 @@ from omegaconf import DictConfig, OmegaConf
 import os
 import pickle as pkl
 
+from our_utils import pipeline
+
 import logging
 
 # @hydra.main(config_path="../conf", config_name="config")
@@ -23,7 +25,7 @@ def my_app(cfg : DictConfig) -> None:
     #print(OmegaConf.to_yaml(cfg))
 
     print(cfg)
-    '''
+
     #Check if configuration already run
     experiments_list_file = os.path.join("..","..","..","..","experiments", "experiments_list.pkl")
     if not os.path.isfile(experiments_list_file):
@@ -33,29 +35,21 @@ def my_app(cfg : DictConfig) -> None:
         with open(experiments_list_file,"rb") as f:
             experiments_list = pkl.load(f)
         
-        if cfg in experiments_list: #alreadye run
+        if cfg in experiments_list: #already run
+            print("already run ---> SKIP")
             return None
         else:
             experiments_list[cfg] = len(experiments_list)
         
     print("RUNNING EXPERIMENT")
-    #prepare_pipeline(cfg,len(experiments_list))
-    #run_pipeline(cfg)
+    pipeline_obj = pipeline.Pipeline(cfg,len(experiments_list))
+    pipeline_obj.prepare_pipeline()
+    pipeline_obj.run_pipeline()
 
     print("SAVE IN EXPERIMENTS_LIST")
     with open(experiments_list_file, "wb") as f:
       pkl.dump(experiments_list, f)
-
-    '''
     
-    # with open(os.path.join(self.get_out_folder("experiments"),"experiments_list.json"), "a") as f:
-    #   all_parameters = self.get_all_parameters()
-    #   print(all_parameters)
-    #   json.dump(all_parameters, f)
-    #   f.write(os.linesep)
-    #if 
-    #....
-    #else
     #return 0 #needed for Optimization Sweepers
 
 if __name__ == "__main__":
