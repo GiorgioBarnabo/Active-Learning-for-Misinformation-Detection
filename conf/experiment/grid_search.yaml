@@ -1,9 +1,10 @@
-
 # @package _global_
 hydra:
-    sweeper:
-        params:
-            +AL_params.offline_AL: 0, 30, 60 #0 == Online, >0 == Number of iterations for Offline AL
-            +data_params.dataname: gossipcop, politifact, condor #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
-            +AL_params.AL_method: uncertainty-margin, random #["combined", "uncertainty-margin", "diversity-cluster", "random"] #don't use "_" to keep filename easily separable
+  sweeper:
+    params:
+      +compile: "{lr:1e-2,wd:1e-4},{lr:1e-3,wd:1e-5}"
+            
+            # +AL_params.offline_AL: 0, 30, 60 #0 == Online, >0 == Number of iterations for Offline AL
+            # +data_params.dataname: gossipcop, politifact, condor #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact
+            # +AL_params.AL_method: uncertainty-margin, random #["combined", "uncertainty-margin", "diversity-cluster", "random"] #don't use "_" to keep filename easily separable
             

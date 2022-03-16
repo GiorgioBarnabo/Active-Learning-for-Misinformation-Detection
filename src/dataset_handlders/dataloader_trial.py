@@ -17,15 +17,16 @@ import sys
 # insert at 1, 0 is the script path (or '' in REPL)
 import os
 
+print(os.getcwd())
+
 os.chdir('/home/barnabog/Online-Active-Learning-for-Misinformation-Detection/src')
 sys.path.insert(1, '')
 #sys.path.append("/Online-Active-Learning-for-Misinformation-Detection/src/models/GNN-FakeNews/")
 
-print(os.getcwd())
 print(sys.path)
 
-from utils.data_loader import *
-from utils.eval_helper import *
+from new_utils.graph_utils.data_loader import *
+from new_utils.graph_utils.eval_helper import *
 
 project_folder = os.path.join('../../../')
 
@@ -36,6 +37,7 @@ dataset = FNNDataset(root='../data', feature='bert', empty=False, name=dataset_n
 
 loader = DataLoader
 
+'''
 split_ratio = [0.60, 0.10, 0.20]
 
 num_training = int(len(dataset) * split_ratio[0])
@@ -68,6 +70,9 @@ with open("../data/{}/train_val_test_graphs/test_idx.pickle".format(dataset_name
     pickle.dump(test_idx, f)
 
 '''
+
+split_ratio = [0.60, 0.10, 0.20]
+
 num_training = int(len(dataset) * split_ratio[0])
 
 num_val = int(len(dataset) * split_ratio[1])
@@ -89,4 +94,3 @@ for graph in train_loader:
     print(graph.y)
     print(type(graph))
     break
-'''
