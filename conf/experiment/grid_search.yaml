@@ -1,8 +1,8 @@
-# @package _global_
+#@package _global_
 hydra:
   sweeper:
     params:
-      +compile: "{lr:1e-2,wd:1e-4},{lr:1e-3,wd:1e-5}"
+      +compile.lr: 1e-2,1e-3,1e-4
             
             # +AL_params.offline_AL: 0, 30, 60 #0 == Online, >0 == Number of iterations for Offline AL
             # +data_params.dataname: gossipcop, politifact, condor #'twitter' #condor_gossipcop_politifact #condor #gossipcop #politifact

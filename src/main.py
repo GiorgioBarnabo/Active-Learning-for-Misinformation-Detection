@@ -5,31 +5,25 @@ import pickle as pkl
 
 import logging
 
-@hydra.main(config_path="../conf", config_name="config")
-def my_app(config) -> None:
-    print(config.lr)
+# @hydra.main(config_path="../conf", config_name="config")
+# def my_app(config) -> None:
+#     print(config.lr)
 
-if __name__=='__main__':
-    my_app()
+# if __name__=='__main__':
+#     my_app()
 
-
-
-'''
 #from pipeline import prepare_pipeline
 
-#@hydra.main(config_path="../conf", config_name="config")
-#def my_app(cfg : DictConfig) -> None:
-def my_app():
-    cfg = OmegaConf.load("../conf/config.yaml")
+@hydra.main(config_path="../conf", config_name="config")
+def my_app(cfg : DictConfig) -> None:
+# def my_app():
+#     cfg = OmegaConf.load("../conf/config.yaml")
     logger = logging.getLogger(__name__)
     logger.info(OmegaConf.to_yaml(cfg))
     #print(OmegaConf.to_yaml(cfg))
 
-    print(cfg.hydra)
-    print(cfg.keys())
-    print()
-    print(blallo)
-
+    print(cfg)
+    '''
     #Check if configuration already run
     experiments_list_file = os.path.join("..","..","..","..","experiments", "experiments_list.pkl")
     if not os.path.isfile(experiments_list_file):
@@ -52,7 +46,8 @@ def my_app():
     with open(experiments_list_file, "wb") as f:
       pkl.dump(experiments_list, f)
 
-
+    '''
+    
     # with open(os.path.join(self.get_out_folder("experiments"),"experiments_list.json"), "a") as f:
     #   all_parameters = self.get_all_parameters()
     #   print(all_parameters)
@@ -65,5 +60,3 @@ def my_app():
 
 if __name__ == "__main__":
     my_app()
-
-'''
