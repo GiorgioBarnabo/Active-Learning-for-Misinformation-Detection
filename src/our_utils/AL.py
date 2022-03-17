@@ -41,6 +41,8 @@ def merge_new_data(current_data, new_data, AL_parameters, keep_all_new, model):
                 new_ids = AL_uncertainty_margin(new_data, take_until, model)
             elif AL_parameters.AL_method == "diversity-cluster":
                 new_ids = AL_diversity_cluster(new_data, take_until, AL_parameters.diversity_nums)
+            elif AL_parameters.AL_method == "deep-discriminator":
+                new_ids = AL_deep_discriminator(current_data['train'], new_data, take_until, AL_parameters.diversity_nums)
             elif AL_parameters.AL_method == "combined":
                 new_ids_divided = []
                 AL_nums_divided = []
@@ -285,3 +287,39 @@ def AL_diversity_cluster(new_x, take_until, diversity_nums):
         print("!!!"*10," CLUSTERING CENTROIDS NOT OK? ","!!!"*10)
 
     return to_take_ids
+
+
+def AL_deep_discriminator(current_train, new_x, take_until, model):
+    if model.multi_gpu:
+        loader = DataListLoader
+    else:
+        loader = DataLoader
+    model_input = loader(current_train, batch_size=len(current_train))
+    
+    pred_y, discriminator_x = model.get_intermediary_activations(model_input)
+    
+    y_test = []
+    for dat in model_input:
+        y_test += list(dat.y.cpu().detach().numpy())
+    y_test = np.array(y_test)
+
+    discriminator_y = np.abs(pred_y - y_test)
+
+    discriminator_model = None#....
+
+    #split this data?
+
+    #train discriminator
+
+    #discriminator_model.fit(discriminator_x,discriminator_y)
+
+    pred_y = discriminator_model.predict(new_x)
+
+    from_most_error_ids = np.argsort(pred_y)
+    most_uncertain_ids = from_most_uncertain_ids[:take_until]
+
+    return most_uncertain_ids
+
+
+def create_discriminator():
+    return None

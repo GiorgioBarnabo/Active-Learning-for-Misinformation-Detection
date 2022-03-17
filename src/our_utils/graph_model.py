@@ -105,21 +105,28 @@ class Model(torch.nn.Module):
 	
 	@torch.no_grad()
 	def get_intermediary_activations(self, loader):
+		self.eval()
+
 		activation = {}
 		def getActivation(name):
 			def hook(self, input, output):
 				activation[name] = output.detach()
-				return hook
+			return hook
 		h = self.conv1.register_forward_hook(getActivation('conv1'))
 
 		activations_scores = []
+		out_log = []
+		
 		for data in loader:
+			if not self.multi_gpu:
+				data = data.to(self.device)
 			out = self(data)
+			out_log += list(F.softmax(out, dim=1).cpu().detach().numpy())
 			activations_scores.append(activation['conv1'])
+		activations_scores = torch.cat(activations_scores,dim=0)
 		h.remove()
-		return activations_scores
+		return np.array(out_log)[:,1], activations_scores
 
-	
 	@torch.no_grad()
 	def predict(self, loader):
 		self.eval()
