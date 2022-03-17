@@ -104,6 +104,23 @@ class Model(torch.nn.Module):
 		return x
 	
 	@torch.no_grad()
+	def get_intermediary_activations(self, loader):
+		activation = {}
+		def getActivation(name):
+			def hook(self, input, output):
+				activation[name] = output.detach()
+				return hook
+		h = self.conv1.register_forward_hook(getActivation('conv1'))
+
+		activations_scores = []
+		for data in loader:
+			out = self(data)
+			activations_scores.append(activation['conv1'])
+		h.remove()
+		return activations_scores
+
+	
+	@torch.no_grad()
 	def predict(self, loader):
 		self.eval()
 		out_log = []
