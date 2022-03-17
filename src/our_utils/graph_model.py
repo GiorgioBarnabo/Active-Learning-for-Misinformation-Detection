@@ -49,6 +49,9 @@ def train_graph_model(model, graph_args, data):
 		loader = DataListLoader
 	else:
 		loader = DataLoader
+	
+	print(data["train"])
+	print(len(data["train"]))
 	train_loader = loader(data["train"], batch_size=model.batch_size)
 	val_loader = loader(data["val"], batch_size=model.batch_size)
 

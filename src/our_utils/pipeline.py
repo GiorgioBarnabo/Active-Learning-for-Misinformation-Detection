@@ -52,7 +52,7 @@ class Pipeline():
         ####Compute num_urls_k_list:
         if "num_urls_k" not in self.cfg.AL_params:
             if self.cfg.AL_params.offline_AL>0:
-                self.cfg.AL_params.num_urls_k = int(self.cfg.AL_params.tot_num_checked_urls)
+                self.cfg.AL_params.num_urls_k = int(self.cfg.AL_params.tot_num_checked_urls//self.cfg.AL_params.offline_AL)
             else:
                 print("TO BE DEFINED ---> divide tot_num_... for number of time-steps?", error)
 
@@ -118,7 +118,7 @@ class Pipeline():
         
         for sample in range(self.cfg.experiment_params.nb_samples):
             current_data = {"train": None,
-                            "val": all_val_data}
+                            "val": all_val_data[list(all_val_data.keys())[0]]}
 
             #Initialize model
             model = graph_model.initialize_graph_model(self.graph_args, self.cfg.experiment_params.starting_seed)
@@ -159,7 +159,7 @@ class Pipeline():
                     model = graph_model.initialize_graph_model(self.graph_args, self.cfg.experiment_params.starting_seed)
 
                 print("TRAINING MODEL")
-                graph_model.train_graph_model(model, self.graph_args, current_data["train"])
+                graph_model.train_graph_model(model, self.graph_args, current_data)
                 
                 print("COMPUTE TEST METRICS")
                 rs = data_utils.model_evaluate_per_month(model, all_test_data)
