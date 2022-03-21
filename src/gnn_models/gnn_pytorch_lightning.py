@@ -70,12 +70,9 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 		self.train_f1_score_macro = torchmetrics.F1Score(average='macro', num_classes=2)
 		self.val_f1_score_macro = torchmetrics.F1Score(average='macro', num_classes=2)
 		self.test_f1_score_macro = torchmetrics.F1Score(average='macro', num_classes=2)
-		self.train_AUC_0 = torchmetrics.AUROC(pos_label=0)
-		self.val_AUC_0 = torchmetrics.AUROC(pos_label=0)
-		self.test_AUC_0 = torchmetrics.AUROC(pos_label=0)	
-		self.train_AUC_1 = torchmetrics.AUROC(pos_label=1)
-		self.val_AUC_1 = torchmetrics.AUROC(pos_label=1)
-		self.test_AUC_1 = torchmetrics.AUROC(pos_label=1)		
+		self.train_AUC = torchmetrics.AUROC()
+		self.val_AUC = torchmetrics.AUROC()
+		self.test_AUC = torchmetrics.AUROC()
 
 
 	def training_step(self, data, batch_idx):
@@ -99,15 +96,13 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 		self.train_acc(y, outputs)
 		self.train_f1_score_micro(y, outputs)
 		self.train_f1_score_macro(y, outputs)
-		self.train_AUC_0(outputs_probs, y.long())
-		self.train_AUC_1(outputs_probs, y.long())
+		self.train_AUC(outputs_probs, y.long())
 
 		self.log("train_loss", train_loss, on_step=True, on_epoch=True, prog_bar=True)
 		self.log("train_accuracy", self.train_acc, on_step=False, on_epoch=True, prog_bar=True)
 		self.log("train_f1_score_micro", self.train_f1_score_micro, on_step=False, on_epoch=True, prog_bar=True)
 		self.log("train_f1_score_macro", self.train_f1_score_macro, on_step=False, on_epoch=True, prog_bar=True)
-		self.log("train_AUC_0", self.train_AUC_0, on_step=False, on_epoch=True, prog_bar=True)
-		self.log("train_AUC_1", self.train_AUC_1, on_step=False, on_epoch=True, prog_bar=True)
+		self.log("train_AUC", self.train_AUC, on_step=False, on_epoch=True, prog_bar=True)
 		
 		return train_loss 
 	
@@ -152,15 +147,13 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 		self.val_acc(y, outputs)
 		self.val_f1_score_micro(y, outputs)
 		self.val_f1_score_macro(y, outputs)
-		self.val_AUC_0(outputs_probs, y.long())
-		self.val_AUC_1(outputs_probs, y.long())
+		self.val_AUC(outputs_probs, y.long())
 
-		self.log("validation_loss", validation_loss, on_step=True, on_epoch=True, prog_bar=True)
+		self.log("validation_loss", validation_loss, on_step=False, on_epoch=True, prog_bar=True)
 		self.log("validation_accuracy", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
 		self.log("validation_f1_score_micro", self.val_f1_score_micro, on_step=False, on_epoch=True, prog_bar=True)
 		self.log("validation_f1_score_macro", self.val_f1_score_macro, on_step=False, on_epoch=True, prog_bar=True)
-		self.log("validation_AUC_0", self.val_AUC_0, on_step=False, on_epoch=True, prog_bar=True)
-		self.log("validation_AUC_1", self.val_AUC_1, on_step=False, on_epoch=True, prog_bar=True)
+		self.log("validation_AUC", self.val_AUC, on_step=False, on_epoch=True, prog_bar=True)
 		
 		return validation_loss
 
@@ -185,15 +178,13 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 		self.test_acc(y, outputs)
 		self.test_f1_score_micro(y, outputs)
 		self.test_f1_score_macro(y, outputs)
-		self.test_AUC_0(outputs_probs, y.long())
-		self.test_AUC_1(outputs_probs, y.long())
+		self.test_AUC(outputs_probs, y.long())
 
 		self.log("test_loss", test_loss, on_step=False, on_epoch=True, prog_bar=True)
 		self.log("test_accuracy", self.test_acc, on_step=False, on_epoch=True, prog_bar=True)
 		self.log("test_f1_score_micro", self.test_f1_score_micro, on_step=False, on_epoch=True, prog_bar=True)
 		self.log("test_f1_score_macro", self.test_f1_score_macro, on_step=False, on_epoch=True, prog_bar=True)
-		self.log("test_AUC_0", self.test_AUC_0, on_step=False, on_epoch=True, prog_bar=True)
-		self.log("test_AUC_1", self.test_AUC_1, on_step=False, on_epoch=True, prog_bar=True)
+		self.log("test_AUC", self.test_AUC, on_step=False, on_epoch=True, prog_bar=True)
 		
 		return test_loss
 
@@ -242,13 +233,13 @@ args.num_classes = 2
 args.num_features = training_set[0].num_features
 
 misinformation_classifer = GNN_Misinfo_Classifier(args, concat=args.concat)
-wandb.init(project="Misinformation_Detection") # Controversy_Detection - 2 way classification
+#wandb.init(project="Misinformation_Detection") # Controversy_Detection - 2 way classification
 wandb_logger = WandbLogger(project="Misinformation_Detection")
 es = EarlyStopping(monitor="validation_loss", patience=5)
 checkpointing = ModelCheckpoint(monitor="validation_loss")
 trainer = pl.Trainer(gpus=4, accelerator="ddp", max_epochs=100, logger=wandb_logger, callbacks=[es, checkpointing])
 trainer.fit(misinformation_classifer, train_loader, val_loader) #testing_loader
 trainer.test(misinformation_classifer, test_loader, ckpt_path="best")
-wandb.finish()
+#wandb.finish()
 
 
