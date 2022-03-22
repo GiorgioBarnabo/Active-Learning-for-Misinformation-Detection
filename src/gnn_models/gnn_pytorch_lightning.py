@@ -37,7 +37,7 @@ from our_utils.utils import data_loader
 sys.modules['new_utils.graph_utils.data_loader'] = data_loader
 
 class GNN_Misinfo_Classifier(pl.LightningModule):
-	def __init__(self, args, concat=False):
+	def __init__(self, args, concat=True):
 		super().__init__()
 		self.args = args
 		self.num_features = args.num_features
@@ -225,9 +225,9 @@ with open("../../data/condor/train_val_test_graphs/validation_graph.pickle", 'rb
 with open("../../data/condor/train_val_test_graphs/test_graph.pickle", 'rb') as f:
 	test_set = pickle.load(f)
 
-train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, num_workers=5) #, num_workers=80)
-val_loader = DataLoader(validation_set, batch_size=args.batch_size, shuffle=False, num_workers=5) #, num_workers=80)
-test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=5) #, num_workers=80)
+train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, num_workers=4) #, num_workers=80)
+val_loader = DataLoader(validation_set, batch_size=args.batch_size, shuffle=False, num_workers=4) #, num_workers=80)
+test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=4) #, num_workers=80)
 
 args.num_classes = 2
 args.num_features = training_set[0].num_features
@@ -237,7 +237,11 @@ misinformation_classifer = GNN_Misinfo_Classifier(args, concat=args.concat)
 wandb_logger = WandbLogger(project="Misinformation_Detection")
 es = EarlyStopping(monitor="validation_loss", patience=5)
 checkpointing = ModelCheckpoint(monitor="validation_loss")
-trainer = pl.Trainer(gpus=4, accelerator="ddp", max_epochs=100, logger=wandb_logger, callbacks=[es, checkpointing])
+trainer = pl.Trainer(gpus=4, 
+					accelerator="ddp", 
+					max_epochs=100, 
+					logger=wandb_logger, 
+					callbacks=[es, checkpointing])
 trainer.fit(misinformation_classifer, train_loader, val_loader) #testing_loader
 trainer.test(misinformation_classifer, test_loader, ckpt_path="best")
 #wandb.finish()
