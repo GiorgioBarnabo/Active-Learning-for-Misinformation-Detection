@@ -1,0 +1,24 @@
+{
+    "os": "Linux-4.15.0-135-generic-x86_64-with-glibc2.10",
+    "python": "3.8.8",
+    "heartbeatAt": "2022-03-24T23:09:33.559511",
+    "startedAt": "2022-03-24T23:09:30.524116",
+    "docker": null,
+    "gpu": "Tesla V100-SXM2-32GB",
+    "gpu_count": 8,
+    "cpu_count": 80,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "main.py",
+    "codePath": "src/main.py",
+    "git": {
+        "remote": "https://github.com/GiorgioBarnabo/Online-Active-Learning-for-Misinformation-Detection.git",
+        "commit": "83e78f7c9450d32c8b7bf3ed7b031d6cd983db12"
+    },
+    "email": null,
+    "root": "/raid/data/siciliano/Online-Active-Learning-for-Misinformation-Detection-main",
+    "host": "aacbeed3504a",
+    "username": "siciliano",
+    "executable": "/opt/conda/bin/python"
+}
