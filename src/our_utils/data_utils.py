@@ -6,7 +6,7 @@ from sklearn import metrics
 import pickle as pkl
 
 from torch.utils.data import ConcatDataset, Subset
-from torch_geometric.data import DataLoader, DataListLoader
+from torch_geometric.loader import DataLoader, DataListLoader
 
 #sys.path.insert(1, os.getcwd()+'/graph_utils')
 #sys.path.insert(1,os.path.join("../"*5,"src","our_utils"))

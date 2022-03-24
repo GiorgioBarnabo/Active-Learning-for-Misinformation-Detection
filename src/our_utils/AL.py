@@ -89,11 +89,7 @@ def merge_new_data(current_data, new_data, AL_parameters, keep_all_new, model):
         
         new_data = torch.utils.data.Subset(new_data, new_ids)
 
-    if model.multi_gpu:
-        loader = DataListLoader
-    else:
-        loader = DataLoader
-    app = loader(new_data, batch_size=model.batch_size)
+    app = DataLoader(new_data, batch_size=model.batch_size)
     cont = 0
     for dat in app:
         cont+=np.sum(dat.y.cpu().detach().numpy())
@@ -161,21 +157,9 @@ def AL_random(take_until):
     return app
 
 def AL_uncertainty_margin(new_x, take_until, model):
-    if model.multi_gpu:
-        loader = DataListLoader
-    else:
-        loader = DataLoader
+    model_input = DataLoader(new_x, batch_size=len(new_x))
 
-    print("MODEL INPUT")
-
-    #model_input = loader(new_x, batch_size=model.batch_size)
-    model_input = loader(new_x, batch_size=len(new_x))
-
-    print("MODEL PREDICT")
-
-    pred_y = model.predict(model_input)
-
-    print("FINISHED")
+    pred_y = np.exp(model(model_input)[:,1])
 
     from_most_uncertain_ids = np.argsort(np.abs(pred_y-0.5))
     most_uncertain_ids = from_most_uncertain_ids[:take_until]
@@ -290,11 +274,7 @@ def AL_diversity_cluster(new_x, take_until, diversity_nums):
 
 
 def AL_deep_discriminator(current_train, new_x, take_until, model):
-    if model.multi_gpu:
-        loader = DataListLoader
-    else:
-        loader = DataLoader
-    model_input = loader(current_train, batch_size=len(current_train))
+    model_input = DataLoader(current_train, batch_size=len(current_train))
     
     pred_y, discriminator_x = model.get_intermediary_activations(model_input)
     

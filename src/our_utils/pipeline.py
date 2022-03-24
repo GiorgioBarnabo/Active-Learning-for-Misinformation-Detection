@@ -12,6 +12,8 @@ from . import graph_model
 
 
 from torch_geometric.data import DataLoader, DataListLoader
+sys.path.append("..")
+import pytorch_lightning as pl
 
 #from omegaconf import OmegaConf,open_dict
 
@@ -67,6 +69,33 @@ class Pipeline():
 
         self.data_folder = os.path.join(project_folder, 'data', 'graph', self.cfg.data_params.dataname)
 
+        #Create WandB logger
+        self.wandb_logger = pl.loggers.WandbLogger(
+            project = "Misinformation_Detection",
+            entity = "misinfo_detection",
+            name = str(self.experiment_id), #!!!!!!!WHY?!!!!!!
+            save_dir="../"*4+"training_logs/",
+        )
+
+        es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=5)
+        checkpointing = pl.callbacks.ModelCheckpoint(
+            monitor="validation_loss",
+            dirpath="../"*4+"models/",
+            filename = self.experiment_id, #!!!!!!!WHY?!!!!!!
+        )
+
+        self.trainer = pl.Trainer(
+            gpus=[1, 2, 3, 7],
+            #strategy=pl.plugins.DDPPlugin(find_unused_parameters=False),
+            # default_root_dir = "../../out/models_checkpoints/",
+            max_epochs=self.graph_args.epochs,
+            logger=self.wandb_logger,
+            callbacks=[es, checkpointing],
+            stochastic_weight_avg=True,
+            accumulate_grad_batches=4,
+            precision=16,
+            log_every_n_steps=50,
+        )
 
     def run_pipeline(self):
         all_train_data, all_val_data, all_test_data = data_utils.load_graph_data(self.data_folder) #to load all data
@@ -107,24 +136,20 @@ class Pipeline():
             
         results_filename = os.path.join(self.results_folder,"rs.npy")#os.path.join(results_folder, '_ALm_' + AL_method + '_k_' + str(num_urls_k) + '.npy')
         all_pos_neg_filename = os.path.join(self.results_folder,"pos_neg.npy")
-        if self.cfg.AL_params.offline_AL>0:
-            all_rs = np.zeros((self.cfg.experiment_params.nb_samples,
-                            self.cfg.AL_params.offline_AL + 1*doing_warm_start,
-                            len(all_test_data),
-                            8,))
-            all_true_false_nums = np.zeros((self.cfg.experiment_params.nb_samples,
-                                            self.cfg.AL_params.offline_AL + 1*doing_warm_start,
-                                            4,))
-        
-        else:
-            print("ONLINE AL TO BE DEFINED",error)
         
         for sample in range(self.cfg.experiment_params.nb_samples):
             current_data = {"train": None,
-                            "val": all_val_data[list(all_val_data.keys())[0]]}
+                            "val": all_val_data[list(all_val_data.keys())[0]],
+                            "test": all_test_data[list(all_test_data.keys())[0]]}
 
+            current_loaders = {"train": None,
+                                "val": DataLoader(all_val_data[list(all_val_data.keys())[0]],batch_size=self.graph_args.batch_size, shuffle=False, num_workers=4, pin_memory=True),
+                                "test": DataLoader(all_test_data[list(all_test_data.keys())[0]],batch_size=self.graph_args.batch_size, shuffle=False, num_workers=4, pin_memory=True)}
+            
             #Initialize model
             model = graph_model.initialize_graph_model(self.graph_args, self.cfg.experiment_params.starting_seed)
+
+            self.trainer.fit(model, current_loaders["train"], current_loaders["val"])
 
             done_keys = (None,None)
             for iteration_num,(starting_key_id,current_key_id) in enumerate(iteration_ranges):
@@ -145,15 +170,24 @@ class Pipeline():
                 current_data, rem_data, (new_positives, new_negatives) = AL.merge_new_data(current_data, new_data,
                                                                                             self.cfg.AL_params, keep_all_new,
                                                                                             model)
+
+                current_loaders["train"] = DataLoader(current_data["train"],batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
+
                 print("FINISH GETTING NEW TRAINING DATA")
                 print("data['train'].shape, ", len(current_data['train']))
                 print("data['val'].shape, ", len(current_data['val']))
 
                 #save new_positives/negatives and current_positives/negatives
                 current_positives, current_negatives = data_utils.compute_new_positives_negatives(model, current_data)
-                all_true_false_nums[sample,iteration_num,:] += np.array([new_positives, new_negatives,
-                                                                        current_positives,current_negatives])
+                
 
+                self.wandb_logger.log("new_positives", new_positives)
+                self.wandb_logger.log("new_negatives", new_negatives)
+                self.wandb_logger.log("current_positives", current_positives)
+                self.wandb_logger.log("current_negatives", current_negatives)
+
+                #all_true_false_nums[sample,iteration_num,:] += np.array([new_positives, new_negatives,
+                #                                                        current_positives,current_negatives])
                 
                 if rem_data is not None:
                     print("REM SHAPES",len(rem_data))#, len(new_y))
@@ -162,18 +196,22 @@ class Pipeline():
                     model = graph_model.initialize_graph_model(self.graph_args, self.cfg.experiment_params.starting_seed)
 
                 print("TRAINING MODEL")
-                graph_model.train_graph_model(model, self.graph_args, current_data)
-                
+                self.trainer.fit(model, current_loaders["train"], current_loaders["val"])
+
                 print("COMPUTE TEST METRICS")
-                rs = data_utils.model_evaluate_per_month(model, all_test_data)
+                #rs = data_utils.model_evaluate_per_month(model, all_test_data)
             
-                all_rs[sample,iteration_num,:,:] += rs
+                self.trainer.test(model, current_loaders["test"], ckpt_path="best")
+
+                wandb.finish()
+                
+                #all_rs[sample,iteration_num,:,:] += rs
 
                 done_keys = starting_key_id,current_key_id
         
-        with open(results_filename, 'wb') as f:
-            np.save(f, all_rs)
+        #with open(results_filename, 'wb') as f:
+        #    np.save(f, all_rs)
 
-        with open(all_pos_neg_filename, 'wb') as f:
-            np.save(f, all_true_false_nums)
+        #with open(all_pos_neg_filename, 'wb') as f:
+        #    np.save(f, all_true_false_nums)
         

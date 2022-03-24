@@ -17,7 +17,7 @@ import logging
 #from pipeline import prepare_pipeline
 
 @hydra.main(config_path="../conf", config_name="config")
-def my_app(cfg : DictConfig) -> None:
+def my_app(cfg):
 # def my_app():
 #     cfg = OmegaConf.load("../conf/config.yaml")
     logger = logging.getLogger(__name__)
@@ -45,6 +45,7 @@ def my_app(cfg : DictConfig) -> None:
     pipeline_obj = pipeline.Pipeline(cfg,len(experiments_list))
     pipeline_obj.prepare_pipeline()
     pipeline_obj.run_pipeline()
+    pipeline_obj.end_pipeline()
 
     print("SAVE IN EXPERIMENTS_LIST")
     with open(experiments_list_file, "wb") as f:
