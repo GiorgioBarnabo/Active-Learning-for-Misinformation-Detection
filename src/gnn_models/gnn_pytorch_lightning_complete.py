@@ -1,36 +1,25 @@
 import argparse
-import time
-from tqdm import tqdm
-from copy import deepcopy
 import pickle
-import numpy as np
-from sklearn import metrics
+import wandb
+import sys
+import os
 
 import torch
-from torch import nn
 import torchmetrics
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from torch_geometric.nn import global_max_pool as gmp
-from torch_geometric.nn import GCNConv, SAGEConv, GATConv, DataParallel
-from torch.utils.data import random_split
 from torch_geometric.loader import DataLoader
-import wandb
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.plugins import DDPPlugin
+import torch_geometric.transforms as T
+
+#print(os.getcwd())
 
 wandb.login()
 
-import sys
-
-# insert at 1, 0 is the script path (or '' in REPL)
-import os
-
-print(os.getcwd())
-
 os.chdir(
-    "/home/barnabog/Online-Active-Learning-for-Misinformation-Detection/src/gnn_models/"
+    "/home/barnabog/Online-Active-Learning-for-Misinformation-Detection/src/gnn_models/"  #ATTENTO_FEDE
 )
 sys.path.append("..")
 # sys.path.insert(1, '')
@@ -39,70 +28,28 @@ sys.path.append("..")
 from our_utils.utils.eval_helper import *
 
 from our_utils.utils import data_loader
+import our_utils.utils
+from gnn_models.gnn_base_models import *
 
-sys.modules["new_utils.graph_utils.data_loader"] = data_loader
-sys.modules["utils.data_loader"] = data_loader
+sys.modules["new_utils.graph_utils.data_loader"] = data_loader  #ATTENTO_FEDE
+sys.modules["utils.data_loader"] = data_loader #ATTENTO_FEDE
+sys.modules["utils"] = our_utils.utils #ATTENTO_FEDE
+sys.modules["new_utils"] = our_utils.utils #ATTENTO_FEDE
 
-
-class GNN(torch.nn.Module):
-    def __init__(
-        self,
-        args,
-    ):
-        super(GNN, self).__init__()
-
-        self.concat = args.concat
-        self.args = args
-        self.num_features = args.num_features
-        self.nhid = args.nhid
-        self.num_classes = args.num_classes
-        self.model = args.model
-
-        if self.model == "gcn":
-            self.conv1 = GCNConv(self.num_features, self.nhid)
-        elif self.model == "sage":
-            self.conv1 = SAGEConv(self.num_features, self.nhid)
-        elif self.model == "gat":
-            self.conv1 = GATConv(self.num_features, self.nhid)
-
-        if self.concat:
-            self.lin0 = torch.nn.Linear(self.num_features, self.nhid)
-            self.lin1 = torch.nn.Linear(self.nhid * 2, self.nhid)
-
-        self.lin2 = torch.nn.Linear(self.nhid, self.num_classes)
-
-    def forward(self, data):
-        x, edge_index, batch, y = data.x, data.edge_index, data.batch, data.y
-
-        edge_attr = None
-
-        x = F.relu(self.conv1(x, edge_index, edge_attr))
-        x = gmp(x, batch)
-
-        if self.concat:
-            news = torch.stack(
-                [
-                    data.x[(data.batch == idx).nonzero().squeeze()[0]]
-                    for idx in range(data.num_graphs)
-                ]
-            )
-            news = F.relu(self.lin0(news))
-            x = torch.cat([x, news], dim=1)
-            x = F.relu(self.lin1(x))
-
-        x = F.log_softmax(self.lin2(x), dim=-1)
-
-        return x
-
+####################################### PyTorch Wrapper For All Our GNN Models ###############################################
 
 class GNN_Misinfo_Classifier(pl.LightningModule):
-    def __init__(self, args, concat=True):
+    def __init__(self, args):
         super().__init__()
         self.args = args
-        self.concat = concat
 
         self.save_hyperparameters()
-        self.model = GNN(self.args, self.concat)
+        if self.args.model in ['gcn', 'gat', 'sage']:
+            self.model = GNN(self.args)
+        elif self.args.model == 'gcnfn':
+            self.model = Net(self.args)
+        elif self.args.model == 'bigcn':
+            self.model = BiNet(self.args)
 
         # METRICS
         self.train_acc = torchmetrics.Accuracy()
@@ -119,10 +66,11 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         self.test_AUC = torchmetrics.AUROC()
 
     def training_step(self, data, batch_idx):
-        # training_step defines the train loop. It is independent of forward
+       
         x = self.model(data)
         y = data.y
         train_loss = F.nll_loss(x, y)
+
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]
 
@@ -139,18 +87,16 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 
         return train_loss
 
-    def forward(self, data):
-        # in lightning, forward defines the prediction/inference actions
+    def forward(self, data):    
         x = self.model(data)
-
         return x
 
     def validation_step(self, data, batch_idx):
-        # training_step defines the train loop. It is independent of forward
+        
         x = self.model(data)
         y = data.y
-
         validation_loss = F.nll_loss(x, y)
+
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]
 
@@ -168,11 +114,10 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         return validation_loss
 
     def test_step(self, data, batch_idx):
-
         x = self.model(data)
         y = data.y
-
         test_loss = F.nll_loss(x, y)
+        
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]
 
@@ -195,6 +140,7 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         )
         return optimizer
 
+####################################### Hyperparameters Definition ###############################################
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", type=str, default="politifact", help="[politifact, gossipcop, condor]")
@@ -206,26 +152,89 @@ parser.add_argument("--concat", type=bool, default=True, help="whether concat ne
 parser.add_argument("--model", type=str, default="sage", help="model type, [gcn, gat, sage]")
 args = parser.parse_args()
 
+####################################### Datasets & Dataloaders ###############################################
+
+args.model = "gcn" # "gcn", "gat", "sage", "gcnfn", "bigcn"
+args.dataset = "politifact"  # "politifact", "gossipcop", "condor"
+workers_available = 3  #ATTENTO_FEDE
+gpus_available = [3] #ATTENTO_FEDE
+
 with open(
-    "../../data/politifact/train_val_test_graphs/training_graph.pickle", "rb"
+    "../../data/{}/train_val_test_graphs/training_graph.pickle".format(args.dataset), "rb"
 ) as f:
     training_set = pickle.load(f)
 with open(
-    "../../data/politifact/train_val_test_graphs/validation_graph.pickle", "rb"
+    "../../data/{}/train_val_test_graphs/training_graph.pickle".format(args.dataset), "rb"
 ) as f:
     validation_set = pickle.load(f)
-with open("../../data/politifact/train_val_test_graphs/test_graph.pickle", "rb") as f:
+with open("../../data/{}/train_val_test_graphs/training_graph.pickle".format(args.dataset), "rb") as f:
     test_set = pickle.load(f)
 
-train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)  # , num_workers=80)
-val_loader = DataLoader(validation_set, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)  # , num_workers=80)
-test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)  # , num_workers=80)
+if args.model == "bigcn":  #ATTENTO_FEDE
+    args.TDdroprate = 0.2
+    args.BUdroprate = 0.2
+    transformer = DropEdge(args.TDdroprate, args.BUdroprate)
+    new_datasets = []
+    for dataset in [training_set, validation_set, test_set]:
+        new_dataset = []
+        for graph in dataset:
+            new_dataset.append(transformer(graph))
+        new_datasets.append(new_dataset)
+    training_set = new_datasets[0]
+    validation_set = new_datasets[1]
+    test_set = new_datasets[2] 
+
+train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, num_workers=workers_available, pin_memory=True) #ATTENTO_FEDE
+val_loader = DataLoader(validation_set, batch_size=args.batch_size, shuffle=False, num_workers=workers_available, pin_memory=True) #ATTENTO_FEDE
+test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=workers_available, pin_memory=True) #ATTENTO_FEDE
+
+####################################### Model Initialization & Training - SINGLE RUN ###############################################
 
 args.num_classes = 2
 args.num_features = training_set[0].num_features
 
+name_experiment = "prova"
+
+misinformation_classifer = GNN_Misinfo_Classifier(args)
+wandb_logger = WandbLogger(
+    project="Misinformation_Detection",
+    name=name_experiment,
+    save_dir="../../out/training_logs/",
+)
+es = EarlyStopping(monitor="validation_loss", patience=5)
+checkpointing = ModelCheckpoint(
+    monitor="validation_loss",
+    dirpath="../../out/models/",
+    filename=name_experiment,
+)
+
+trainer = pl.Trainer(
+    gpus=gpus_available, #change based on availability
+    strategy=DDPPlugin(find_unused_parameters=False),
+    # default_root_dir = "../../out/models_checkpoints/",
+    max_epochs=1,
+    logger=wandb_logger,
+    callbacks=[es, checkpointing],
+    stochastic_weight_avg=True,
+    accumulate_grad_batches=4,
+    precision=16,
+    log_every_n_steps=50,
+)
+
+trainer.fit(
+    misinformation_classifer, train_loader, val_loader
+)  # testing_loader
+trainer.test(misinformation_classifer, test_loader, ckpt_path="best")
+wandb.finish()
+
+####################################### Model Initialization & Training - ITERATIVE RUN ###############################################
+
+'''
+workers_available = 3  #ATTENTO_FEDE
+gpus_available = [3] #ATTENTO_FEDE
+
 for dataset in ["politifact", "gossipcop", "condor"]:
-    for model in ["gcn", "gat", "sage"]:
+    for model in ["gcn", "gat", "sage", "gcnfn", "bigcn"]:
 
         args.dataset = dataset
         args.model = model
@@ -237,9 +246,26 @@ for dataset in ["politifact", "gossipcop", "condor"]:
         with open("../../data/{}/train_val_test_graphs/test_graph.pickle".format(dataset), "rb") as f:
             test_set = pickle.load(f)
 
-        train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
-        val_loader = DataLoader(validation_set, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
-        test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
+        args.num_classes = 2
+        args.num_features = training_set[0].num_features
+        
+        if args.model == "bigcn":  #ATTENTO_FEDE
+            args.TDdroprate = 0.2
+            args.BUdroprate = 0.2
+            transformer = DropEdge(args.TDdroprate, args.BUdroprate)
+            new_datasets = []
+            for dataset in [training_set, validation_set, test_set]:
+                new_dataset = []
+                for graph in dataset:
+                    new_dataset.append(transformer(graph))
+                new_datasets.append(new_dataset)
+            training_set = new_datasets[0]
+            validation_set = new_datasets[1]
+            test_set = new_datasets[2]
+        
+        train_loader = DataLoader(training_set, batch_size=args.batch_size, shuffle=True, num_workers=workers_available, pin_memory=True) #ATTENTO_FEDE
+        val_loader = DataLoader(validation_set, batch_size=args.batch_size, shuffle=False, num_workers=workers_available, pin_memory=True)
+        test_loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=workers_available, pin_memory=True)
 
         name_experiment = "{}_{}".format(args.dataset, args.model)
 
@@ -257,10 +283,10 @@ for dataset in ["politifact", "gossipcop", "condor"]:
         )
 
         trainer = pl.Trainer(
-            gpus=[1, 2, 3, 7],
+            gpus=gpus_available, #change based on availability #ATTENTO_FEDE
             strategy=DDPPlugin(find_unused_parameters=False),
             # default_root_dir = "../../out/models_checkpoints/",
-            max_epochs=100,
+            max_epochs=1,
             logger=wandb_logger,
             callbacks=[es, checkpointing],
             stochastic_weight_avg=True,
@@ -274,6 +300,10 @@ for dataset in ["politifact", "gossipcop", "condor"]:
         )  # testing_loader
         trainer.test(misinformation_classifer, test_loader, ckpt_path="best")
         wandb.finish()
+
+'''
+
+####################################### PyTorch Lightning: Use Weights From Pre-Trained Model  ###############################################
 
 # wandb.init(project="Misinformation_Detection") # Controversy_Detection - 2 way classification
 # wandb.finish()
