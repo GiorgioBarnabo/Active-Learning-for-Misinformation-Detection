@@ -9,9 +9,10 @@ import numpy as np
 from . import AL
 from . import data_utils
 from . import graph_model
+import wandb
 
 
-from torch_geometric.data import DataLoader, DataListLoader
+from torch_geometric.loader import DataLoader, DataListLoader
 sys.path.append("..")
 import pytorch_lightning as pl
 
@@ -67,26 +68,26 @@ class Pipeline():
         if not os.path.isdir(self.results_folder):
             os.makedirs(self.results_folder)
 
-        self.data_folder = os.path.join(project_folder, 'data', 'graph', self.cfg.data_params.dataname)
+        self.data_folder = os.path.join(project_folder, 'data', self.cfg.data_params.dataname)
 
         #Create WandB logger
         self.wandb_logger = pl.loggers.WandbLogger(
             project = "Misinformation_Detection",
             entity = "misinfo_detection",
             name = str(self.experiment_id), #!!!!!!!WHY?!!!!!!
-            save_dir="../"*4+"training_logs/",
+            save_dir= os.path.join(project_folder,"out","training_logs","wandb"),
         )
 
         es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=5)
         checkpointing = pl.callbacks.ModelCheckpoint(
             monitor="validation_loss",
-            dirpath="../"*4+"models/",
-            filename = self.experiment_id, #!!!!!!!WHY?!!!!!!
+            dirpath=os.path.join(project_folder,"out","models"),
+            filename = str(self.experiment_id), #!!!!!!!WHY?!!!!!!
         )
-
+        
         self.trainer = pl.Trainer(
-            gpus=[1, 2, 3, 7],
-            #strategy=pl.plugins.DDPPlugin(find_unused_parameters=False),
+            gpus=[3], #change based on availability
+            strategy=pl.plugins.DDPPlugin(find_unused_parameters=False),
             # default_root_dir = "../../out/models_checkpoints/",
             max_epochs=self.graph_args.epochs,
             logger=self.wandb_logger,
@@ -149,7 +150,7 @@ class Pipeline():
             #Initialize model
             model = graph_model.initialize_graph_model(self.graph_args, self.cfg.experiment_params.starting_seed)
 
-            self.trainer.fit(model, current_loaders["train"], current_loaders["val"])
+            #self.trainer.fit(model, current_loaders["val"], current_loaders["val"])
 
             done_keys = (None,None)
             for iteration_num,(starting_key_id,current_key_id) in enumerate(iteration_ranges):
@@ -169,22 +170,22 @@ class Pipeline():
 
                 current_data, rem_data, (new_positives, new_negatives) = AL.merge_new_data(current_data, new_data,
                                                                                             self.cfg.AL_params, keep_all_new,
-                                                                                            model)
+                                                                                            model, self.trainer)
 
-                current_loaders["train"] = DataLoader(current_data["train"],batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
+                current_loaders["train"] = DataLoader(current_data["train"],batch_size=self.graph_args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
 
                 print("FINISH GETTING NEW TRAINING DATA")
                 print("data['train'].shape, ", len(current_data['train']))
                 print("data['val'].shape, ", len(current_data['val']))
 
                 #save new_positives/negatives and current_positives/negatives
-                current_positives, current_negatives = data_utils.compute_new_positives_negatives(model, current_data)
+                current_positives, current_negatives = data_utils.compute_new_positives_negatives(model, current_loaders["train"])
                 
-
-                self.wandb_logger.log("new_positives", new_positives)
-                self.wandb_logger.log("new_negatives", new_negatives)
-                self.wandb_logger.log("current_positives", current_positives)
-                self.wandb_logger.log("current_negatives", current_negatives)
+                #LOG POSS/NEGS; MOVE TO DATA UTILS?
+                #wandb.log("new_positives", new_positives)
+                #wandb.log("new_negatives", new_negatives)
+                #wandb.log("current_positives", current_positives)
+                #wandb.log("current_negatives", current_negatives)
 
                 #all_true_false_nums[sample,iteration_num,:] += np.array([new_positives, new_negatives,
                 #                                                        current_positives,current_negatives])
@@ -203,7 +204,7 @@ class Pipeline():
             
                 self.trainer.test(model, current_loaders["test"], ckpt_path="best")
 
-                wandb.finish()
+                #wandb.finish()
                 
                 #all_rs[sample,iteration_num,:,:] += rs
 
@@ -214,4 +215,7 @@ class Pipeline():
 
         #with open(all_pos_neg_filename, 'wb') as f:
         #    np.save(f, all_true_false_nums)
+        
+    def end_pipeline(self):
+        wandb.finish()
         

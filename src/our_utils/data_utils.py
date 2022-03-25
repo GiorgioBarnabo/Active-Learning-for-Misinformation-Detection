@@ -94,16 +94,11 @@ def compute_metrics(pred_test, y_test):
     return res
 
 
-def compute_new_positives_negatives(model, current_data):
+def compute_new_positives_negatives(model, train_loader):
     #save new_positives/negatives and current_positives/negatives
-    if model.multi_gpu:
-        loader = DataListLoader
-    else:
-        loader = DataLoader
-    app = loader(current_data['train'], batch_size=model.batch_size)
     cont = 0
-    for dat in app:
+    for dat in train_loader:
         cont+=np.sum(dat.y.cpu().detach().numpy())
     current_positives = cont
-    current_negatives = len(current_data['train']) - current_positives
+    current_negatives = len(train_loader.dataset) - current_positives
     return current_positives, current_negatives

@@ -19,6 +19,13 @@ import wandb
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.plugins import DDPPlugin
 
+
+#import os
+#os.chdir(
+#    "/home/barnabog/Online-Active-Learning-for-Misinformation-Detection/src/gnn_models/"  #ATTENTO_FEDE
+#)
+
+
 wandb.login()
 
 import sys
