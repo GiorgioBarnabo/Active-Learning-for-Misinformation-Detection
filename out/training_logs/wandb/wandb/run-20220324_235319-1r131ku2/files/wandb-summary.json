@@ -1,0 +1,1 @@
+{"validation_loss": 0.6859443783760071, "validation_accuracy": 0.5073260068893433, "validation_f1_score_micro": 0.5073260068893433, "validation_f1_score_macro": 0.3365735113620758, "validation_AUC": 0.7911036014556885, "epoch": 0, "trainer/global_step": 1, "_timestamp": 1648166018, "_runtime": 18, "_step": 0, "_wandb": {"runtime": 18}}
