@@ -1,8 +1,8 @@
-/data/condor/*
-/data/gossipcop/*
-/data/politifact/raw/*
-/data/politifact/processed/pol_data_bert.pt
-/data/politifact/train_val_test_graphs/*
+/data/graph/condor/*
+/data/graph/gossipcop/*
+/data/graph/politifact/raw/*
+/data/graph/politifact/processed/pol_data_bert.pt
+/data/graph/politifact/train_val_test_graphs/*
 #/data/condor/*
 #/data/gossipcop/*
 /old_code/*

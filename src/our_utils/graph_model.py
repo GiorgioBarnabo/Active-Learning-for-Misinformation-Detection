@@ -18,6 +18,7 @@ from torch_geometric.loader import DataLoader
 import wandb
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.plugins import DDPPlugin
+from . import gnn_base_models
 
 
 #import os
@@ -53,13 +54,13 @@ os.chdir(
 #sys.modules["utils.data_loader"] = data_loader
 
 
-def initialize_graph_model(graph_args, seed):
-    #CHANGE IF...
-	torch.manual_seed(seed)
-	if torch.cuda.is_available():
-		torch.cuda.manual_seed(seed)
+def initialize_graph_model(cfg):
+    # #CHANGE IF...
+	# torch.manual_seed(seed)
+	# if torch.cuda.is_available():
+	# 	torch.cuda.manual_seed(seed)
 
-	model = GNN_Misinfo_Classifier(graph_args)
+	model = GNN_Misinfo_Classifier(cfg)
 	#Useless now?
     #if graph_args.multi_gpu:
 	#	model = DataParallel(model)
@@ -67,66 +68,18 @@ def initialize_graph_model(graph_args, seed):
     
 	return model
 
-class GNN(torch.nn.Module):
-    def __init__(
-        self,
-        args,
-    ):
-        super(GNN, self).__init__()
-
-        self.concat = args.concat
-        self.args = args
-        self.num_features = args.num_features
-        self.nhid = args.nhid
-        self.num_classes = args.num_classes
-        self.model = args.model
-
-        if self.model == "gcn":
-            self.conv1 = GCNConv(self.num_features, self.nhid)
-        elif self.model == "sage":
-            self.conv1 = SAGEConv(self.num_features, self.nhid)
-        elif self.model == "gat":
-            self.conv1 = GATConv(self.num_features, self.nhid)
-
-        if self.concat:
-            self.lin0 = torch.nn.Linear(self.num_features, self.nhid)
-            self.lin1 = torch.nn.Linear(self.nhid * 2, self.nhid)
-
-        self.lin2 = torch.nn.Linear(self.nhid, self.num_classes)
-
-    def forward(self, data):
-        x, edge_index, batch, y = data.x, data.edge_index, data.batch, data.y
-
-        edge_attr = None
-
-        x = F.relu(self.conv1(x, edge_index, edge_attr))
-        x = gmp(x, batch)
-
-        if self.concat:
-            news = torch.stack(
-                [
-                    data.x[(data.batch == idx).nonzero().squeeze()[0]]
-                    for idx in range(data.num_graphs)
-                ]
-            )
-            news = F.relu(self.lin0(news))
-            x = torch.cat([x, news], dim=1)
-            x = F.relu(self.lin1(x))
-
-        x = F.log_softmax(self.lin2(x), dim=-1)
-
-        return x
-
-
 class GNN_Misinfo_Classifier(pl.LightningModule):
-    def __init__(self, args, concat=True):
+    def __init__(self, args):
         super().__init__()
         self.args = args
-        self.concat = args.concat
 
         self.save_hyperparameters()
-        
-        self.model = GNN(self.args)
+        if self.args.model in ['gcn', 'gat', 'sage']:
+            self.model = GNN(self.args)
+        elif self.args.model == 'gcnfn':
+            self.model = Net(self.args)
+        elif self.args.model == 'bigcn':
+            self.model = BiNet(self.args)
 
         # METRICS
         self.train_acc = torchmetrics.Accuracy()
@@ -143,10 +96,11 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         self.test_AUC = torchmetrics.AUROC()
 
     def training_step(self, data, batch_idx):
-        # training_step defines the train loop. It is independent of forward
+       
         x = self.model(data)
         y = data.y
         train_loss = F.nll_loss(x, y)
+
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]
 
@@ -163,18 +117,16 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 
         return train_loss
 
-    def forward(self, data):
-        # in lightning, forward defines the prediction/inference actions
+    def forward(self, data):    
         x = self.model(data)
-
         return x
 
     def validation_step(self, data, batch_idx):
-        # training_step defines the train loop. It is independent of forward
+        
         x = self.model(data)
         y = data.y
-
         validation_loss = F.nll_loss(x, y)
+
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]
 
@@ -194,8 +146,8 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
     def test_step(self, data, batch_idx):
         x = self.model(data)
         y = data.y
-
         test_loss = F.nll_loss(x, y)
+        
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]
 
@@ -214,6 +166,6 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
-            self.parameters(), lr=self.args.lr, weight_decay=self.args.weight_decay
+            self.parameters(), lr=args.lr, weight_decay=args.weight_decay
         )
         return optimizer
