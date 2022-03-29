@@ -75,11 +75,11 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 
         self.save_hyperparameters()
         if self.args.model in ['gcn', 'gat', 'sage']:
-            self.model = GNN(self.args)
+            self.model = gnn_base_models.GNN(self.args)
         elif self.args.model == 'gcnfn':
-            self.model = Net(self.args)
+            self.model = gnn_base_models.Net(self.args)
         elif self.args.model == 'bigcn':
-            self.model = BiNet(self.args)
+            self.model = gnn_base_models.BiNet(self.args)
 
         # METRICS
         self.train_acc = torchmetrics.Accuracy()
@@ -166,6 +166,6 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
-            self.parameters(), lr=args.lr, weight_decay=args.weight_decay
+            self.parameters(), lr=self.args.lr, weight_decay=self.args.weight_decay
         )
         return optimizer
