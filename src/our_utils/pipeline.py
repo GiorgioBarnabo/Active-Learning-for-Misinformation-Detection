@@ -224,6 +224,6 @@ class Pipeline():
         #with open(all_pos_neg_filename, 'wb') as f:
         #    np.save(f, all_true_false_nums)
         
-    def end_pipeline(self):
-        wandb.finish()
+    #def end_pipeline(self):
+    #    wandb.finish()
         

@@ -42,14 +42,14 @@ sweep_config = {
     }
 }
 
-def sweep_config():
+def run_config():
     with wandb.init(project="Misinformation_Detection", job_type="train") as run:  #job_type="train", 
-       
         cfg = run.config
 
-        run_config(cfg)
+        run_single_config(cfg)
+        
 
-def run_config(cfg):
+def run_single_config(cfg):
     cfg.warm_start_years = [np.inf, np.inf]
     cfg.training_years = [2005,2021]
     cfg.batch_size = 128
@@ -101,8 +101,8 @@ def run_config(cfg):
     print("RUN PIPELINE")
     pipeline_obj.run_pipeline()
 
-    print("END PIPELINE")
-    pipeline_obj.end_pipeline()
+    #print("END PIPELINE")
+    #pipeline_obj.end_pipeline()
 
     print("SAVE IN EXPERIMENTS_LIST")
     with open(experiments_list_file, "wb") as f:
@@ -121,18 +121,22 @@ if __name__ == "__main__":
     #print("BC",base_config)
     #print("SC",sweep_config)
 
+    
+    #os.environ["WANDB_CONSOLE"] = "off" ####TO AVOID ValueError('signal only works in main thread')???
 
     #SWEEP:
     #sweep_id = wandb.sweep(sweep_config)#, project="Controversy_Detection")
-    #wandb.agent(sweep_id, function=sweep_config, count=1)
+    #wandb.agent(sweep_id, function=run_config, count=1)
 
     #SINGLE:
     cfg = {
-        'dataset': 'gossipcop',
+        'dataset': 'politifact',
         'model': "gcn",
         'AL_method':"uncertainty-margin"
     }
     cfg = custom_wandb.dotdict(cfg)
-    run_config(cfg)
+    run_single_config(cfg)
+
+
 
 

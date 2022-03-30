@@ -26,7 +26,7 @@ from . import gnn_base_models
 #)
 
 
-wandb.login()
+#wandb.login()
 
 import sys
 
@@ -70,10 +70,16 @@ def initialize_graph_model(cfg):
 class GNN_Misinfo_Classifier(pl.LightningModule):
     def __init__(self, cfg):
         super().__init__()
-        self.cfg = cfg
+
+        print("PARSER")
+        parser = argparse.ArgumentParser()
+        for k,v in cfg.items():
+            parser.add_argument('--'+k, default=v)
+        self.cfg = parser.parse_args()
 
         #self.save_hyperparameters()
-        print("HYPRS SAVED")
+        #print("HYPRS SAVED")
+        
         if self.cfg.model in ['gcn', 'gat', 'sage']:
             self.model = gnn_base_models.GNN(self.cfg)
         elif self.cfg.model == 'gcnfn':
@@ -98,6 +104,8 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         self.test_AUC = torchmetrics.AUROC()
 
     def training_step(self, data, batch_idx):
+        print("TRAIN STEP") 
+        
         x = self.model(data)
         y = data.y
         train_loss = F.nll_loss(x, y)
@@ -118,11 +126,13 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 
         return train_loss
 
-    def forward(self, data):    
+    def forward(self, data):
+        print("FORWARD") 
         x = self.model(data)
         return x
 
     def validation_step(self, data, batch_idx):
+        print("VAL STEP") 
         
         x = self.model(data)
         y = data.y
@@ -145,6 +155,8 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         return validation_loss
 
     def test_step(self, data, batch_idx):
+        print("TEST STEP") 
+        
         x = self.model(data)
         y = data.y
         test_loss = F.nll_loss(x, y)
@@ -166,7 +178,9 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         return test_loss
 
     def configure_optimizers(self):
+        print("CONF OPTIM") 
         optimizer = torch.optim.Adam(
             self.parameters(), lr=self.cfg.lr, weight_decay=self.cfg.weight_decay
         )
+        print("OPTIM END")
         return optimizer
