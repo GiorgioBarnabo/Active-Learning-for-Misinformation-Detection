@@ -1,7 +1,7 @@
 import sys, os, argparse
 sys.path.append('..')
 
-project_folder = os.path.join('../'*5)
+project_folder = os.path.join('..')
 
 import numpy as np
 
@@ -41,11 +41,12 @@ class Pipeline():
         #     self.cfg.AL_params.val_last_samples = np.inf
 
         ####Compute num_urls_k_list:
-        if "num_urls_k" not in self.cfg.AL_params:   #FEDE_WHAT_TO_DO
+        if "num_urls_k" not in self.cfg:   #FEDE_WHAT_TO_DO
             if self.cfg.number_AL_iteration>0:
-                self.cfg.AL_params.num_urls_k = int(self.cfg.AL_params.tot_num_checked_urls//self.cfg.AL_params.offline_AL)
+                self.cfg.num_urls_k = int(self.cfg.tot_num_checked_urls//self.cfg.number_AL_iteration)
             else:
-                print("TO BE DEFINED ---> divide tot_num_... for number of time-steps?", error)
+                print("TO BE DEFINED ---> divide tot_num_... for number of time-steps?")
+                print(error)
 
         #Set results folder
         self.results_folder = os.path.join(project_folder, 'out', "results",str(self.experiment_id))#, self.cfg.experiment_params.results_set, self.cfg.data_params.dataname)
@@ -53,7 +54,7 @@ class Pipeline():
         if not os.path.isdir(self.results_folder):
             os.makedirs(self.results_folder)
 
-        self.data_folder = os.path.join(project_folder, 'data', self.cfg.dataset)
+        self.data_folder = os.path.join(project_folder, 'data', "graph", self.cfg.dataset)
 
         #Create WandB logger
         self.wandb_logger = pl.loggers.WandbLogger(
@@ -74,7 +75,7 @@ class Pipeline():
             gpus=self.cfg.gpus_available, #change based on availability
             strategy=pl.plugins.DDPPlugin(find_unused_parameters=False),
             # default_root_dir = "../../out/models_checkpoints/",
-            max_epochs=self.graph_args.epochs,
+            max_epochs=self.cfg.epochs,
             logger=self.wandb_logger,
             callbacks=[es, checkpointing],
             stochastic_weight_avg=True,
@@ -84,7 +85,6 @@ class Pipeline():
         )
 
     def run_pipeline(self):
-
         all_train_data, all_val_data, all_test_data = data_utils.load_graph_data(self.data_folder) #to load all data
         print("all_train_data.keys", all_train_data.keys())
         print("all_val_data.keys", all_val_data.keys())
@@ -110,7 +110,7 @@ class Pipeline():
         #WARM-START PREPARATION
         warm_start_starting_key_id, warm_start_ending_key_id = data_utils.get_warm_start_key_ids(
             all_train_data.keys(), 
-            self.cfg.data_params.warm_start_years)
+            self.cfg.warm_start_years)
         
         print(warm_start_starting_key_id,warm_start_ending_key_id)
         
@@ -147,12 +147,15 @@ class Pipeline():
                             "test": all_test_data[list(all_test_data.keys())[0]]}
 
             current_loaders = {"train": None,
-                                "val": DataLoader(all_val_data[list(all_val_data.keys())[0]],batch_size=self.graph_args.batch_size, shuffle=False, num_workers=self.cfg.workers_available, pin_memory=True),
-                                "test": DataLoader(all_test_data[list(all_test_data.keys())[0]],batch_size=self.graph_args.batch_size, shuffle=False, num_workers=self.cfg.workers_available, pin_memory=True)}
+                                "val": DataLoader(all_val_data[list(all_val_data.keys())[0]],batch_size=self.cfg.batch_size, shuffle=False, num_workers=self.cfg.workers_available, pin_memory=True),
+                                "test": DataLoader(all_test_data[list(all_test_data.keys())[0]],batch_size=self.cfg.batch_size, shuffle=False, num_workers=self.cfg.workers_available, pin_memory=True)}
             
             #Initialize model
+            print("INITIALIZING MODEL")
             model = graph_model.initialize_graph_model(self.cfg)
 
+            #print(current_loaders["val"])
+            #print(len(current_loaders["val"]))
             #self.trainer.fit(model, current_loaders["val"], current_loaders["val"])
 
             done_keys = (None,None)
@@ -171,11 +174,13 @@ class Pipeline():
                 print("NEW TRAINING DATA")
                 keep_all_new = doing_warm_start and iteration_num==0
 
+                print("MERGE NEW DATA")
                 current_data, rem_data, (new_positives, new_negatives) = AL.merge_new_data(current_data, new_data,
-                                                                                            self.cfg.AL_params, keep_all_new, #FEDE_WHAT_TO_DO
+                                                                                            self.cfg, keep_all_new, #FEDE_WHAT_TO_DO
                                                                                             model, self.trainer)
 
-                current_loaders["train"] = DataLoader(current_data["train"],batch_size=self.graph_args.batch_size, shuffle=True, num_workers=self.cfg.workers_available, pin_memory=True)
+                print("CHANGE CURRENT DATALOADER")
+                current_loaders["train"] = DataLoader(current_data["train"],batch_size=self.cfg.batch_size, shuffle=True, num_workers=self.cfg.workers_available, pin_memory=True)
 
                 print("FINISH GETTING NEW TRAINING DATA")
                 print("data['train'].shape, ", len(current_data['train']))

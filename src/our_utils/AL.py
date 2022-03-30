@@ -83,7 +83,7 @@ def merge_new_data(current_data, new_data, AL_parameters, keep_all_new, model, t
 
     rem_data = None
     if new_ids is not None:
-        if AL_parameters.offline_AL>0:
+        if AL_parameters.number_AL_iteration>0:
             rem_range = np.array(list(set(range(len(new_data))).difference(set(list(new_ids)))))
             rem_data = torch.utils.data.Subset(new_data, rem_range)
         
@@ -96,7 +96,7 @@ def merge_new_data(current_data, new_data, AL_parameters, keep_all_new, model, t
     new_positives = cont
     new_negatives = len(new_data) - new_positives
 
-    #if offline_AL>0:
+    #if number_AL_iteration>0:
     new_train = new_data
     #new_val = None
     #else:

@@ -24,13 +24,13 @@ class GNN(torch.nn.Module):
         self.num_features = args.num_features
         self.nhid = args.nhid
         self.num_classes = args.num_classes
-        self.model = args.model
+        #self.model = args.model
 
-        if self.model == "gcn":
+        if args.model == "gcn":
             self.conv1 = GCNConv(self.num_features, self.nhid)
-        elif self.model == "sage":
+        elif args.model == "sage":
             self.conv1 = SAGEConv(self.num_features, self.nhid)
-        elif self.model == "gat":
+        elif args.model == "gat":
             self.conv1 = GATConv(self.num_features, self.nhid)
 
         if self.concat:

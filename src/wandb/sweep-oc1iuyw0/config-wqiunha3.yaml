@@ -1,8 +1,0 @@
-wandb_version: 1
-
-AL_params/AL_method:
-  value: random
-data_params/dataname:
-  value: gossipcop
-model_params/graph_model_name:
-  value: sage

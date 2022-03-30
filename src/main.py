@@ -1,5 +1,3 @@
-import hydra
-from omegaconf import DictConfig, OmegaConf
 import os
 import pickle as pkl
 import numpy as np
@@ -36,7 +34,7 @@ sweep_config = {
             'values': ['gossipcop', 'politifact', 'condor']
         },
         'model': {
-            'values': ["gcn", "gat", "sage", "gcnfn", "bigcn"]
+            'values': ["gcn", "gat", "sage", "gcnfn"] #"bigcn"
         },
         'AL_method': {
             'values': ["random", "uncertainty-margin"]
@@ -44,60 +42,71 @@ sweep_config = {
     }
 }
 
-def run_config():
+def sweep_config():
     with wandb.init(project="Misinformation_Detection", job_type="train") as run:  #job_type="train", 
        
         cfg = run.config
-        
-        cfg.warm_start_years = [np.inf, np.inf]
-        cfg.training_years = [2005,2021]
-        cfg.batch_size = 128
-        cfg.number_AL_iteration = 30
-        cfg.tot_num_checked_urls = 1200
-        cfg.retrain_from_scratch = True
-        cfg.train_last_samples = np.inf
-        cfg.val_last_samples = np.inf
-        cfg.add_val_to_train  = False
-        
-        cfg.lr = 0.005
-        cfg.weight_decay = 0.01
-        cfg.nhid = 128
-        cfg.concat = True
-        cfg.workers_available = 3
-        cfg.gpus_available = [3]
-        cfg.num_classes = 2 
-        cfg.nb_samples = 1
 
-        #Check if configuration already run
-        experiments_list_file = os.path.join("..","out","experiments", "experiments_list.pkl")
-        if not os.path.isfile(experiments_list_file):
-            print("EXPERIMENT FILE NOT EXISTING")
-            experiment_id = 0
-            experiments_list = [cfg]
-        else:
-            with open(experiments_list_file,"rb") as f:
-                experiments_list = pkl.load(f)
-            
-            try:
-                experiment_id = experiments_list.index(self.original_cfg)
-                #if not redo:
-                print("already run ---> SKIP")
-                return None
-            except ValueError:
-                experiment_id = len(experiments_list)
-                experiments_list.append(cfg)
-            
-        print("RUNNING EXPERIMENT")
-        print(cfg)
+        run_config(cfg)
+
+def run_config(cfg):
+    cfg.warm_start_years = [np.inf, np.inf]
+    cfg.training_years = [2005,2021]
+    cfg.batch_size = 128
+    cfg.number_AL_iteration = 30
+    cfg.tot_num_checked_urls = 1200
+    cfg.retrain_from_scratch = True
+    cfg.train_last_samples = np.inf
+    cfg.val_last_samples = np.inf
+    cfg.add_val_to_train  = False
+    
+    cfg.epochs = 30
+    cfg.lr = 0.005
+    cfg.weight_decay = 0.01
+    cfg.nhid = 128
+    cfg.concat = True
+    cfg.workers_available = 3
+    cfg.gpus_available = [3]
+    cfg.num_classes = 2 
+    cfg.nb_samples = 1
+
+    #Check if configuration already run
+    experiments_list_file = os.path.join("..","out","experiments", "experiments_list.pkl")
+    if not os.path.isfile(experiments_list_file):
+        print("EXPERIMENT FILE NOT EXISTING")
+        experiment_id = 0
+        experiments_list = [cfg]
+    else:
+        with open(experiments_list_file,"rb") as f:
+            experiments_list = pkl.load(f)
         
-        pipeline_obj = pipeline.Pipeline(cfg, experiment_id)
-        pipeline_obj.prepare_pipeline()
-        pipeline_obj.run_pipeline()
-        pipeline_obj.end_pipeline()
+        try:
+            experiment_id = experiments_list.index(self.original_cfg)
+            #if not redo:
+            print("already run ---> SKIP")
+            return None
+        except ValueError:
+            experiment_id = len(experiments_list)
+            experiments_list.append(cfg)
+        
+    print("RUNNING EXPERIMENT")
+    print(cfg)
+    
+    print("INITIALIZE PIPELINE")
+    pipeline_obj = pipeline.Pipeline(cfg, experiment_id)
+
+    print("PREPARE PIPELINE")
+    pipeline_obj.prepare_pipeline()
+
+    print("RUN PIPELINE")
+    pipeline_obj.run_pipeline()
+
+    print("END PIPELINE")
+    pipeline_obj.end_pipeline()
 
     print("SAVE IN EXPERIMENTS_LIST")
     with open(experiments_list_file, "wb") as f:
-      pkl.dump(experiments_list, f)
+        pkl.dump(experiments_list, f)
 
 if __name__ == "__main__":
     #config_path="../cfg"
@@ -112,5 +121,18 @@ if __name__ == "__main__":
     #print("BC",base_config)
     #print("SC",sweep_config)
 
-    sweep_id = wandb.sweep(sweep_config)#, project="Controversy_Detection")
-    wandb.agent(sweep_id, function=run_config, count=1)
+
+    #SWEEP:
+    #sweep_id = wandb.sweep(sweep_config)#, project="Controversy_Detection")
+    #wandb.agent(sweep_id, function=sweep_config, count=1)
+
+    #SINGLE:
+    cfg = {
+        'dataset': 'gossipcop',
+        'model': "gcn",
+        'AL_method':"uncertainty-margin"
+    }
+    cfg = custom_wandb.dotdict(cfg)
+    run_config(cfg)
+
+

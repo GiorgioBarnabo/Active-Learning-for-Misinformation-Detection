@@ -1,7 +1,6 @@
 import argparse
 import time
 from tqdm import tqdm
-from copy import deepcopy
 import pickle
 import numpy as np
 from sklearn import metrics
@@ -69,17 +68,20 @@ def initialize_graph_model(cfg):
 	return model
 
 class GNN_Misinfo_Classifier(pl.LightningModule):
-    def __init__(self, args):
+    def __init__(self, cfg):
         super().__init__()
-        self.args = args
+        self.cfg = cfg
 
-        self.save_hyperparameters()
-        if self.args.model in ['gcn', 'gat', 'sage']:
-            self.model = gnn_base_models.GNN(self.args)
-        elif self.args.model == 'gcnfn':
-            self.model = gnn_base_models.Net(self.args)
-        elif self.args.model == 'bigcn':
-            self.model = gnn_base_models.BiNet(self.args)
+        #self.save_hyperparameters()
+        print("HYPRS SAVED")
+        if self.cfg.model in ['gcn', 'gat', 'sage']:
+            self.model = gnn_base_models.GNN(self.cfg)
+        elif self.cfg.model == 'gcnfn':
+            self.model = gnn_base_models.Net(self.cfg)
+        elif self.cfg.model == 'bigcn':
+            self.model = gnn_base_models.BiNet(self.cfg)
+
+        print("MODEL CREATED")
 
         # METRICS
         self.train_acc = torchmetrics.Accuracy()
@@ -96,7 +98,6 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         self.test_AUC = torchmetrics.AUROC()
 
     def training_step(self, data, batch_idx):
-       
         x = self.model(data)
         y = data.y
         train_loss = F.nll_loss(x, y)
@@ -166,6 +167,6 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
-            self.parameters(), lr=self.args.lr, weight_decay=self.args.weight_decay
+            self.parameters(), lr=self.cfg.lr, weight_decay=self.cfg.weight_decay
         )
         return optimizer
