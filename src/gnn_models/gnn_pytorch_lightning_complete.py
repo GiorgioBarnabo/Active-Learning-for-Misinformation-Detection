@@ -155,20 +155,24 @@ args = parser.parse_args()
 ####################################### Datasets & Dataloaders ###############################################
 
 args.model = "gcn" # "gcn", "gat", "sage", "gcnfn", "bigcn"
-args.dataset = "politifact"  # "politifact", "gossipcop", "condor"
+args.dataset = "gossipcop"  # "politifact", "gossipcop", "condor"
 workers_available = 3  #ATTENTO_FEDE
 gpus_available = [3] #ATTENTO_FEDE
 
 with open(
-    "../../data/{}/train_val_test_graphs/training_graph.pickle".format(args.dataset), "rb"
+    "../../data/graph/{}/train_val_test_graphs/training_graph.pickle".format(args.dataset), "rb"
 ) as f:
     training_set = pickle.load(f)
 with open(
-    "../../data/{}/train_val_test_graphs/training_graph.pickle".format(args.dataset), "rb"
+    "../../data/graph/{}/train_val_test_graphs/validation_graph.pickle".format(args.dataset), "rb"
 ) as f:
     validation_set = pickle.load(f)
-with open("../../data/{}/train_val_test_graphs/training_graph.pickle".format(args.dataset), "rb") as f:
+with open("../../data/graph/{}/train_val_test_graphs/test_graph.pickle".format(args.dataset), "rb") as f:
     test_set = pickle.load(f)
+
+print(len(training_set))
+print(len(validation_set))
+print(len(test_set))
 
 if args.model == "bigcn":  #ATTENTO_FEDE
     args.TDdroprate = 0.2

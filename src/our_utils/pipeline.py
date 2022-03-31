@@ -4,7 +4,7 @@ sys.path.append('..')
 project_folder = os.path.join('..')
 
 import numpy as np
-
+import time
 #import our scripts
 from . import AL
 from . import data_utils
@@ -19,28 +19,13 @@ import pytorch_lightning as pl
 
 #from omegaconf import OmegaConf,open_dict
 
-
 class Pipeline():
     def __init__(self, cfg, experiment_id):
         self.cfg = cfg
         self.experiment_id = experiment_id
 
     def prepare_pipeline(self):
-        #with open_dict(self.cfg): #needed if trying to set attributes not in config
-        #self.graph_args = self.prepare_graph_parser()
 
-        #Change "inf" to np.inf
-        # for i,x in enumerate(self.cfg.data_params.warm_start_years):
-        #     if x=="inf":
-        #         self.cfg.data_params.warm_start_years[i] = np.inf
-
-        # if self.cfg.AL_params.train_last_samples=="inf":
-        #     self.cfg.AL_params.train_last_samples = np.inf
-
-        # if self.cfg.AL_params.val_last_samples=="inf":
-        #     self.cfg.AL_params.val_last_samples = np.inf
-
-        ####Compute num_urls_k_list:
         if "num_urls_k" not in self.cfg:   #FEDE_WHAT_TO_DO
             if self.cfg.number_AL_iteration>0:
                 self.cfg.num_urls_k = int(self.cfg.tot_num_checked_urls//self.cfg.number_AL_iteration)
@@ -49,46 +34,22 @@ class Pipeline():
                 print(error)
 
         #Set results folder
-        self.results_folder = os.path.join(project_folder, 'out', "results",str(self.experiment_id))#, self.cfg.experiment_params.results_set, self.cfg.data_params.dataname)
+        self.results_folder = os.path.join(project_folder, 'out', "results", str(self.experiment_id))#, self.cfg.experiment_params.results_set, self.cfg.data_params.dataname)
         #create results_folder not exists
         if not os.path.isdir(self.results_folder):
             os.makedirs(self.results_folder)
 
         self.data_folder = os.path.join(project_folder, 'data', "graph", self.cfg.dataset)
 
-        #Create WandB logger
-        self.wandb_logger = pl.loggers.WandbLogger(
-            project = "Misinformation_Detection",
-            entity = "misinfo_detection",
-            name = str(self.experiment_id), #!!!!!!!WHY?!!!!!!
-            save_dir= os.path.join(project_folder,"out","training_logs","wandb"),
-        )
-
-        es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=5)
-        checkpointing = pl.callbacks.ModelCheckpoint(
-            monitor="validation_loss",
-            dirpath=os.path.join(project_folder,"out","models"),
-            filename = str(self.experiment_id), #!!!!!!!WHY?!!!!!!
-        )
-        
-        self.trainer = pl.Trainer(
-            gpus=self.cfg.gpus_available, #change based on availability
-            strategy=pl.plugins.DDPPlugin(find_unused_parameters=False),
-            # default_root_dir = "../../out/models_checkpoints/",
-            max_epochs=self.cfg.epochs,
-            logger=self.wandb_logger,
-            callbacks=[es, checkpointing],
-            stochastic_weight_avg=True,
-            accumulate_grad_batches=4,
-            precision=16,
-            log_every_n_steps=50,
-        )
-
     def run_pipeline(self):
         all_train_data, all_val_data, all_test_data = data_utils.load_graph_data(self.data_folder) #to load all data
         print("all_train_data.keys", all_train_data.keys())
         print("all_val_data.keys", all_val_data.keys())
         print("all_test_data.keys", all_test_data.keys())
+
+        print(len(all_train_data["2020"]))
+        print(len(all_val_data["2020"]))
+        print(len(all_test_data["ALL_TEST"]))
 
         if self.cfg.model == "bigcn":
             self.cfg.TDdroprate = 0.2
@@ -152,14 +113,15 @@ class Pipeline():
             
             #Initialize model
             print("INITIALIZING MODEL")
-            model = graph_model.initialize_graph_model(self.cfg)
 
-            #print(current_loaders["val"])
-            #print(len(current_loaders["val"]))
-            #self.trainer.fit(model, current_loaders["val"], current_loaders["val"])
+            self.cfg.AL_iteration = -1
+            #self.cfg.experiment_name = "{}_{}_{}_{}"
+
+            model, self.trainer = graph_model.initialize_graph_model(self.cfg)
 
             done_keys = (None,None)
-            for iteration_num,(starting_key_id,current_key_id) in enumerate(iteration_ranges):
+            for iteration_num,(starting_key_id,current_key_id) in enumerate(iteration_ranges):              
+                
                 print("CURRENT PERIOD:", list(all_train_data.keys())[starting_key_id], "(incl.) - ", list(all_train_data.keys())[current_key_id-1],"(incl.)")
                 
                 if (starting_key_id,current_key_id) != done_keys:
@@ -179,6 +141,8 @@ class Pipeline():
                                                                                             self.cfg, keep_all_new, #FEDE_WHAT_TO_DO
                                                                                             model, self.trainer)
 
+                wandb.finish()
+
                 print("CHANGE CURRENT DATALOADER")
                 current_loaders["train"] = DataLoader(current_data["train"],batch_size=self.cfg.batch_size, shuffle=True, num_workers=self.cfg.workers_available, pin_memory=True)
 
@@ -186,44 +150,26 @@ class Pipeline():
                 print("data['train'].shape, ", len(current_data['train']))
                 print("data['val'].shape, ", len(current_data['val']))
 
-                #save new_positives/negatives and current_positives/negatives
                 current_positives, current_negatives = data_utils.compute_new_positives_negatives(model, current_loaders["train"])
-                
-                #LOG POSS/NEGS; MOVE TO DATA UTILS?
-                #wandb.log("new_positives", new_positives)
-                #wandb.log("new_negatives", new_negatives)
-                #wandb.log("current_positives", current_positives)
-                #wandb.log("current_negatives", current_negatives)
-
-                #all_true_false_nums[sample,iteration_num,:] += np.array([new_positives, new_negatives,
-                #                                                        current_positives,current_negatives])
                 
                 if rem_data is not None:
                     print("REM SHAPES",len(rem_data))#, len(new_y))
 
+                self.cfg.AL_iteration = self.cfg.AL_iteration+1
+                self.cfg.current_positives = current_positives
+                self.cfg.current_negatives = current_negatives
+                self.cfg.new_positives = new_positives
+                self.cfg.new_negatives = new_negatives
+                
                 if self.cfg.retrain_from_scratch: #Re-initialize model
-                    model = graph_model.initialize_graph_model(self.cfg)
-
+                    model, self.trainer = graph_model.initialize_graph_model(self.cfg)
+                
                 print("TRAINING MODEL")
                 self.trainer.fit(model, current_loaders["train"], current_loaders["val"])
 
                 print("COMPUTE TEST METRICS")
-                #rs = data_utils.model_evaluate_per_month(model, all_test_data)
-            
+
                 self.trainer.test(model, current_loaders["test"], ckpt_path="best")
 
-                #wandb.finish()
-                
-                #all_rs[sample,iteration_num,:,:] += rs
-
-                done_keys = starting_key_id,current_key_id
-        
-        #with open(results_filename, 'wb') as f:
-        #    np.save(f, all_rs)
-
-        #with open(all_pos_neg_filename, 'wb') as f:
-        #    np.save(f, all_true_false_nums)
-        
-    #def end_pipeline(self):
-    #    wandb.finish()
+                done_keys = starting_key_id, current_key_id
         

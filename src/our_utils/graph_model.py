@@ -18,6 +18,8 @@ import wandb
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.plugins import DDPPlugin
 from . import gnn_base_models
+import os
+project_folder = os.path.join('..')
 
 
 #import os
@@ -54,30 +56,50 @@ os.chdir(
 
 
 def initialize_graph_model(cfg):
-    # #CHANGE IF...
-	# torch.manual_seed(seed)
-	# if torch.cuda.is_available():
-	# 	torch.cuda.manual_seed(seed)
+    #print("PARSER")
+    parser = argparse.ArgumentParser()
+    for k,v in cfg.items():
+        parser.add_argument('--'+k, default=v)
+    cfg = parser.parse_args()
 
-	model = GNN_Misinfo_Classifier(cfg)
-	#Useless now?
-    #if graph_args.multi_gpu:
-	#	model = DataParallel(model)
-	#model = model.to(graph_args.device)
+    model = GNN_Misinfo_Classifier(cfg)
+
+    wandb_logger = pl.loggers.WandbLogger(
+        project = "Misinformation_Detection",
+        entity = "misinfo_detection",
+        #name = str(self.experiment_id), #!!!!!!!WHY?!!!!!!
+        save_dir = os.path.join(project_folder,"out","training_logs","wandb"),
+    )
+
+    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=5)
+    checkpointing = pl.callbacks.ModelCheckpoint(
+        monitor="validation_loss",
+        dirpath=os.path.join(project_folder,"out","models"),
+        #filename = str(self.experiment_id), #!!!!!!!WHY?!!!!!!
+    )
     
-	return model
+    trainer = pl.Trainer(
+        gpus=cfg.gpus_available, #change based on availability
+        strategy=pl.plugins.DDPPlugin(find_unused_parameters=False),
+        # default_root_dir = "../../out/models_checkpoints/",
+        max_epochs=cfg.epochs,
+        logger=wandb_logger,
+        callbacks=[es, checkpointing],
+        stochastic_weight_avg=True,
+        accumulate_grad_batches=4,
+        precision=16,
+        log_every_n_steps=50,
+    ) 
+
+    return model, trainer
 
 class GNN_Misinfo_Classifier(pl.LightningModule):
     def __init__(self, cfg):
         super().__init__()
 
-        print("PARSER")
-        parser = argparse.ArgumentParser()
-        for k,v in cfg.items():
-            parser.add_argument('--'+k, default=v)
-        self.cfg = parser.parse_args()
+        self.cfg = cfg
 
-        #self.save_hyperparameters()
+        self.save_hyperparameters()
         #print("HYPRS SAVED")
         
         if self.cfg.model in ['gcn', 'gat', 'sage']:
@@ -87,7 +109,7 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         elif self.cfg.model == 'bigcn':
             self.model = gnn_base_models.BiNet(self.cfg)
 
-        print("MODEL CREATED")
+        #print("MODEL CREATED")
 
         # METRICS
         self.train_acc = torchmetrics.Accuracy()
@@ -104,7 +126,7 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         self.test_AUC = torchmetrics.AUROC()
 
     def training_step(self, data, batch_idx):
-        print("TRAIN STEP") 
+        #print("TRAIN STEP") 
         
         x = self.model(data)
         y = data.y
@@ -127,12 +149,12 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         return train_loss
 
     def forward(self, data):
-        print("FORWARD") 
+        #print("FORWARD") 
         x = self.model(data)
         return x
 
     def validation_step(self, data, batch_idx):
-        print("VAL STEP") 
+        #print("VAL STEP") 
         
         x = self.model(data)
         y = data.y
@@ -155,7 +177,7 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         return validation_loss
 
     def test_step(self, data, batch_idx):
-        print("TEST STEP") 
+        #print("TEST STEP") 
         
         x = self.model(data)
         y = data.y
@@ -178,9 +200,9 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         return test_loss
 
     def configure_optimizers(self):
-        print("CONF OPTIM") 
+        #print("CONF OPTIM") 
         optimizer = torch.optim.Adam(
             self.parameters(), lr=self.cfg.lr, weight_decay=self.cfg.weight_decay
         )
-        print("OPTIM END")
+        #print("OPTIM END")
         return optimizer

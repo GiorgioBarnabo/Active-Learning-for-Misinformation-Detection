@@ -54,7 +54,7 @@ def run_single_config(cfg):
     cfg.training_years = [2005,2021]
     cfg.batch_size = 128
     cfg.number_AL_iteration = 30
-    cfg.tot_num_checked_urls = 1200
+    cfg.tot_num_checked_urls = 80
     cfg.retrain_from_scratch = True
     cfg.train_last_samples = np.inf
     cfg.val_last_samples = np.inf
@@ -66,7 +66,7 @@ def run_single_config(cfg):
     cfg.nhid = 128
     cfg.concat = True
     cfg.workers_available = 3
-    cfg.gpus_available = [3]
+    cfg.gpus_available = [1]
     cfg.num_classes = 2 
     cfg.nb_samples = 1
 
@@ -129,13 +129,17 @@ if __name__ == "__main__":
     #wandb.agent(sweep_id, function=run_config, count=1)
 
     #SINGLE:
-    cfg = {
-        'dataset': 'politifact',
-        'model': "gcn",
-        'AL_method':"uncertainty-margin"
-    }
-    cfg = custom_wandb.dotdict(cfg)
-    run_single_config(cfg)
+    
+    for dataset in ["condor"]:
+        for AL in ["random"]:
+    
+            cfg = {
+                'dataset': dataset,
+                'model': "gcn",
+                'AL_method':AL}
+                
+            cfg = custom_wandb.dotdict(cfg)
+            run_single_config(cfg)
 
 
 

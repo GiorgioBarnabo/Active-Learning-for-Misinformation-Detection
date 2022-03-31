@@ -1,0 +1,190 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.12.11
+    framework: lightning
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    m:
+    - 1: trainer/global_step
+      6:
+      - 3
+    - 1: validation_loss
+      5: 1
+      6:
+      - 1
+    - 1: validation_accuracy
+      5: 1
+      6:
+      - 1
+    - 1: validation_f1_score_micro
+      5: 1
+      6:
+      - 1
+    - 1: validation_f1_score_macro
+      5: 1
+      6:
+      - 1
+    - 1: validation_AUC
+      5: 1
+      6:
+      - 1
+    - 1: epoch
+      5: 1
+      6:
+      - 1
+    - 1: train_loss_epoch
+      5: 1
+      6:
+      - 1
+    - 1: train_accuracy
+      5: 1
+      6:
+      - 1
+    - 1: train_f1_score_micro
+      5: 1
+      6:
+      - 1
+    - 1: train_f1_score_macro
+      5: 1
+      6:
+      - 1
+    - 1: train_AUC
+      5: 1
+      6:
+      - 1
+    - 1: test_loss
+      5: 1
+      6:
+      - 1
+    - 1: test_accuracy
+      5: 1
+      6:
+      - 1
+    - 1: test_f1_score_micro
+      5: 1
+      6:
+      - 1
+    - 1: test_f1_score_macro
+      5: 1
+      6:
+      - 1
+    - 1: test_AUC
+      5: 1
+      6:
+      - 1
+    python_version: 3.8.8
+    start_time: 1648732933
+    t:
+      1:
+      - 1
+      - 5
+      - 9
+      - 40
+      - 41
+      - 50
+      2:
+      - 1
+      - 5
+      - 9
+      - 40
+      - 41
+      - 50
+      3:
+      - 2
+      - 7
+      4: 3.8.8
+      5: 0.12.11
+      8:
+      - 5
+cfg/AL_iteration:
+  desc: null
+  value: 9
+cfg/AL_method:
+  desc: null
+  value: random
+cfg/add_val_to_train:
+  desc: null
+  value: false
+cfg/batch_size:
+  desc: null
+  value: 128
+cfg/concat:
+  desc: null
+  value: true
+cfg/current_negatives:
+  desc: null
+  value: 10
+cfg/current_positives:
+  desc: null
+  value: 10
+cfg/dataset:
+  desc: null
+  value: politifact
+cfg/epochs:
+  desc: null
+  value: 30
+cfg/gpus_available:
+  desc: null
+  value:
+  - 1
+cfg/lr:
+  desc: null
+  value: 0.005
+cfg/model:
+  desc: null
+  value: gcn
+cfg/nb_samples:
+  desc: null
+  value: 1
+cfg/new_negatives:
+  desc: null
+  value: 2
+cfg/new_positives:
+  desc: null
+  value: 0
+cfg/nhid:
+  desc: null
+  value: 128
+cfg/num_classes:
+  desc: null
+  value: 2
+cfg/num_features:
+  desc: null
+  value: 768
+cfg/num_urls_k:
+  desc: null
+  value: 2
+cfg/number_AL_iteration:
+  desc: null
+  value: 30
+cfg/retrain_from_scratch:
+  desc: null
+  value: true
+cfg/tot_num_checked_urls:
+  desc: null
+  value: 80
+cfg/train_last_samples:
+  desc: null
+  value: .inf
+cfg/training_years:
+  desc: null
+  value:
+  - 2005
+  - 2021
+cfg/val_last_samples:
+  desc: null
+  value: .inf
+cfg/warm_start_years:
+  desc: null
+  value:
+  - .inf
+  - .inf
+cfg/weight_decay:
+  desc: null
+  value: 0.01
+cfg/workers_available:
+  desc: null
+  value: 3

@@ -12,6 +12,8 @@ from torch_geometric.loader import DataLoader, DataListLoader
 #sys.path.insert(1,os.path.join("../"*5,"src","our_utils"))
 from . import utils
 sys.modules['utils'] = utils
+sys.modules["new_utils"] = utils 
+sys.modules["new_utils.graph_utils"] = utils
 
 def load_graph_data(data_folder):
     divided_data_folder = os.path.join(data_folder,"train_val_test_graphs")
