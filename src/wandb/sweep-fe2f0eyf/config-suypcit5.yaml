@@ -1,8 +1,0 @@
-wandb_version: 1
-
-AL_method:
-  value: uncertainty-margin
-dataset:
-  value: gossipcop
-model:
-  value: gcnfn

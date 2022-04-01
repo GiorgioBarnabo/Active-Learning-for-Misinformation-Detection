@@ -131,7 +131,7 @@ if __name__ == "__main__":
     #SINGLE:
     
     for dataset in ["condor"]:
-        for AL in ["random"]:
+        for AL in ["uncertainty-margin"]:
     
             cfg = {
                 'dataset': dataset,
@@ -140,7 +140,4 @@ if __name__ == "__main__":
                 
             cfg = custom_wandb.dotdict(cfg)
             run_single_config(cfg)
-
-
-
 
