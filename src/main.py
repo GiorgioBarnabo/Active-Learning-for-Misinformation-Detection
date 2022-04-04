@@ -9,7 +9,6 @@ import logging
 import wandb
 import yaml
 
-
 # @hydra.main(config_path="../conf", config_name="config")
 # def my_app(config) -> None:
 #     print(config.lr)
@@ -52,9 +51,9 @@ def run_config():
 def run_single_config(cfg):
     cfg.warm_start_years = [np.inf, np.inf]
     cfg.training_years = [2005,2021]
-    cfg.batch_size = 128
-    cfg.number_AL_iteration = 30
-    cfg.tot_num_checked_urls = 80
+    cfg.batch_size = 32
+    cfg.number_AL_iteration = 8
+    cfg.tot_num_checked_urls = 200
     cfg.retrain_from_scratch = True
     cfg.train_last_samples = np.inf
     cfg.val_last_samples = np.inf
@@ -65,8 +64,8 @@ def run_single_config(cfg):
     cfg.weight_decay = 0.01
     cfg.nhid = 128
     cfg.concat = True
-    cfg.workers_available = 3
-    cfg.gpus_available = [1]
+    cfg.workers_available = 4
+    cfg.gpus_available = [2]
     cfg.num_classes = 2 
     cfg.nb_samples = 1
 
@@ -131,7 +130,7 @@ if __name__ == "__main__":
     #SINGLE:
     
     for dataset in ["condor"]:
-        for AL in ["uncertainty-margin"]:
+        for AL in ["uncertainty-margin", "random"]:
     
             cfg = {
                 'dataset': dataset,

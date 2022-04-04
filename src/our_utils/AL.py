@@ -26,7 +26,7 @@ def keep_sum_vec(vec, sm):
     vec = vec.astype(int)
     return vec
 
-def merge_new_data(current_data, new_data, AL_parameters, keep_all_new, model, trainer):
+def merge_new_data(current_data, new_data, AL_parameters, keep_all_new, model, trainer, workers_available, batch_size):
     if keep_all_new: #data['x_train'] is None:
         new_ids = None
     else:
@@ -40,7 +40,7 @@ def merge_new_data(current_data, new_data, AL_parameters, keep_all_new, model, t
                 new_ids = AL_random(take_until)
             elif AL_parameters.AL_method == "uncertainty-margin":
                 print("AL: UNCERTAINTY-MARGIN")
-                new_ids = AL_uncertainty_margin(new_data, take_until, model, trainer)
+                new_ids = AL_uncertainty_margin(new_data, take_until, model, trainer, workers_available, batch_size)
             elif AL_parameters.AL_method == "diversity-cluster":
                 new_ids = AL_diversity_cluster(new_data, take_until, AL_parameters.diversity_nums)
             elif AL_parameters.AL_method == "deep-discriminator":
@@ -162,10 +162,13 @@ def AL_random(take_until):
     app = np.array(range(take_until))
     return app
 
-def AL_uncertainty_margin(new_x, take_until, model, trainer):
-    model_input = DataLoader(new_x, batch_size=len(new_x))
+def AL_uncertainty_margin(new_x, take_until, model, trainer, workers_available, batch_size):
+    model_input = DataLoader(new_x, batch_size=batch_size, num_workers=workers_available)
 
-    predictions = trainer.predict(model,model_input)[0]
+    predictions = trainer.predict(model, model_input, return_predictions=True)#[0]
+
+    predictions = torch.cat(predictions, 0)
+
     pred_y = np.exp(predictions[:,1]).numpy()
 
     from_most_uncertain_ids = np.argsort(np.abs(pred_y-0.5))

@@ -11,6 +11,7 @@ from . import data_utils
 from . import graph_model
 from . import gnn_base_models
 import wandb
+import psutil
 
 
 from torch_geometric.loader import DataLoader, DataListLoader
@@ -139,7 +140,9 @@ class Pipeline():
                 print("MERGE NEW DATA")
                 current_data, rem_data, (new_positives, new_negatives) = AL.merge_new_data(current_data, new_data,
                                                                                             self.cfg, keep_all_new, #FEDE_WHAT_TO_DO
-                                                                                            model, self.trainer)
+                                                                                            model, self.trainer, 
+                                                                                            self.cfg.workers_available,
+                                                                                            self.cfg.batch_size)
 
                 wandb.finish()
 
@@ -163,6 +166,10 @@ class Pipeline():
                 
                 if self.cfg.retrain_from_scratch: #Re-initialize model
                     model, self.trainer = graph_model.initialize_graph_model(self.cfg)
+                
+                print("OCCUPIED MEMORY")
+
+                print(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
                 
                 print("TRAINING MODEL")
                 self.trainer.fit(model, current_loaders["train"], current_loaders["val"])
