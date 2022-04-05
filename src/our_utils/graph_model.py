@@ -71,7 +71,7 @@ def initialize_graph_model(cfg):
         save_dir = os.path.join(project_folder,"out","training_logs","wandb"),
     )
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=5)  #validation_f1_score_macro / validation_loss
+    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=7)  #validation_f1_score_macro / validation_loss
     checkpointing = pl.callbacks.ModelCheckpoint(
         monitor="validation_loss",
         dirpath=os.path.join(project_folder,"out","models"),
@@ -80,15 +80,15 @@ def initialize_graph_model(cfg):
     
     trainer = pl.Trainer(
         gpus=cfg.gpus_available, #change based on availability
-        strategy=pl.plugins.DDPPlugin(find_unused_parameters=False),
+        #strategy="ddp", #pl.plugins.DDPPlugin(find_unused_parameters=False),
         # default_root_dir = "../../out/models_checkpoints/",
         max_epochs=cfg.epochs,
+        accelerator="auto",
         logger=wandb_logger,
         callbacks=[es, checkpointing],
         stochastic_weight_avg=True,
-        accumulate_grad_batches=4,
+        accumulate_grad_batches=2,
         precision=16,
-        log_every_n_steps=50,
     ) 
 
     return model, trainer
@@ -140,11 +140,11 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         self.train_f1_score_macro(y, outputs)
         self.train_AUC(outputs_probs, y.long())
 
-        self.log("train_loss", train_loss, on_step=True, on_epoch=True, prog_bar=True)
-        self.log("train_accuracy", self.train_acc, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("train_f1_score_micro", self.train_f1_score_micro, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("train_f1_score_macro", self.train_f1_score_macro, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("train_AUC", self.train_AUC, on_step=False, on_epoch=True, prog_bar=False)
+        self.log("train_loss", train_loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True, rank_zero_only=False)
+        self.log("train_accuracy", self.train_acc, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
+        self.log("train_f1_score_micro", self.train_f1_score_micro, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
+        self.log("train_f1_score_macro", self.train_f1_score_macro, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
+        self.log("train_AUC", self.train_AUC, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True,rank_zero_only=False)
 
         return train_loss
 
@@ -168,11 +168,11 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         self.val_f1_score_macro(y, outputs)
         self.val_AUC(outputs_probs, y.long())
 
-        self.log("validation_loss", validation_loss,on_step=False, on_epoch=True, prog_bar=True)
-        self.log("validation_accuracy", self.val_acc, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("validation_f1_score_micro", self.val_f1_score_micro, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("validation_f1_score_macro", self.val_f1_score_macro, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("validation_AUC", self.val_AUC, on_step=False, on_epoch=True, prog_bar=False)
+        self.log("validation_loss", validation_loss,on_step=False, on_epoch=True, prog_bar=True, sync_dist=True, rank_zero_only=False)
+        self.log("validation_accuracy", self.val_acc, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
+        self.log("validation_f1_score_micro", self.val_f1_score_micro, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
+        self.log("validation_f1_score_macro", self.val_f1_score_macro, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
+        self.log("validation_AUC", self.val_AUC, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
 
         return validation_loss
 
@@ -191,11 +191,11 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         self.test_f1_score_macro(y, outputs)
         self.test_AUC(outputs_probs, y.long())
 
-        self.log("test_loss", test_loss, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("test_accuracy", self.test_acc, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("test_f1_score_micro", self.test_f1_score_micro, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("test_f1_score_macro", self.test_f1_score_macro, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("test_AUC", self.test_AUC, on_step=False, on_epoch=True, prog_bar=False)
+        self.log("test_loss", test_loss, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
+        self.log("test_accuracy", self.test_acc, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
+        self.log("test_f1_score_micro", self.test_f1_score_micro, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
+        self.log("test_f1_score_macro", self.test_f1_score_macro, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
+        self.log("test_AUC", self.test_AUC, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True, rank_zero_only=False)
 
         return test_loss
 

@@ -165,7 +165,7 @@ def AL_random(take_until):
 def AL_uncertainty_margin(new_x, take_until, model, trainer, workers_available, batch_size):
     model_input = DataLoader(new_x, batch_size=batch_size, num_workers=workers_available)
 
-    predictions = trainer.predict(model, model_input, return_predictions=True)#[0]
+    predictions = trainer.predict(model, model_input)#[0]
 
     predictions = torch.cat(predictions, 0)
 
@@ -173,6 +173,8 @@ def AL_uncertainty_margin(new_x, take_until, model, trainer, workers_available, 
 
     from_most_uncertain_ids = np.argsort(np.abs(pred_y-0.5))
     most_uncertain_ids = from_most_uncertain_ids[:take_until]
+
+    del model_input
 
     return most_uncertain_ids
 

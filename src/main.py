@@ -65,7 +65,7 @@ def run_single_config(cfg):
     cfg.nhid = 128
     cfg.concat = True
     cfg.workers_available = 4
-    cfg.gpus_available = [2]
+    cfg.gpus_available = [5]
     cfg.num_classes = 2 
     cfg.nb_samples = 1
 
@@ -103,9 +103,9 @@ def run_single_config(cfg):
     #print("END PIPELINE")
     #pipeline_obj.end_pipeline()
 
-    print("SAVE IN EXPERIMENTS_LIST")
-    with open(experiments_list_file, "wb") as f:
-        pkl.dump(experiments_list, f)
+    # print("SAVE IN EXPERIMENTS_LIST")
+    # with open(experiments_list_file, "wb") as f:
+    #     pkl.dump(experiments_list, f)
 
 if __name__ == "__main__":
     #config_path="../cfg"

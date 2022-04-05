@@ -146,6 +146,10 @@ class Pipeline():
 
                 wandb.finish()
 
+                del current_loaders["train"]
+
+                current_loaders["train"] = None
+
                 print("CHANGE CURRENT DATALOADER")
                 current_loaders["train"] = DataLoader(current_data["train"],batch_size=self.cfg.batch_size, shuffle=True, num_workers=self.cfg.workers_available, pin_memory=True)
 
@@ -163,6 +167,9 @@ class Pipeline():
                 self.cfg.current_negatives = current_negatives
                 self.cfg.new_positives = new_positives
                 self.cfg.new_negatives = new_negatives
+                
+                del model
+                del self.trainer
                 
                 if self.cfg.retrain_from_scratch: #Re-initialize model
                     model, self.trainer = graph_model.initialize_graph_model(self.cfg)
