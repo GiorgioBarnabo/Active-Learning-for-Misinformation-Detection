@@ -233,12 +233,12 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         
         for data in loader:
             out = self.model(data).argmax(axis=1)
-            print(out)
-            print(data.y)
+            #print(out)
+            #print(data.y)
             err = torch.abs(out-data.y)
-            print(err)
+            #print(err)
             err_log += list(err.cpu().detach().numpy())
-            print(err_log)
+            #print(err_log)
             #out_log += list(F.softmax(out, dim=1).cpu().detach().numpy())
             activations_scores.append(activation['embedding'])
         activations_scores = torch.cat(activations_scores,dim=0)
@@ -262,11 +262,11 @@ from typing import List
 from typing import Optional
 
 class CoreNet(nn.Module):
-    def __init__(self):
+    def __init__(self, embeddings_size):
         super().__init__()
         layers: List[nn.Module] = []
 
-        input_dim: int = 768
+        input_dim: int = embeddings_size
         for output_dim in [1024,256,64]:
             layers.append(nn.Linear(input_dim, output_dim))
             layers.append(nn.BatchNorm1d(output_dim)),
@@ -279,53 +279,46 @@ class CoreNet(nn.Module):
         self.layers: nn.Module = nn.Sequential(*layers)
 
     def forward(self, data: torch.Tensor) -> torch.Tensor:
-        return self.layers(data)
+        #print("CORE:",data)
+        #print("CORE:",data.shape)
+        output = F.log_softmax(self.layers(data), dim=1)
+        return output
 
 class MultiLabelClassifier(pl.LightningModule):
-    def __init__(self,config):
+    def __init__(self,config,embeddings_size):
         super().__init__()
         self.cfg = config
-        self.model = CoreNet()
+        self.model = CoreNet(embeddings_size)
         #self.save_hyperparameters()
     
     def training_step(self, data, batch_idx):
-        #print("TRAIN STEP") 
-        
-        x = self.model(data)
-        y = data.y
+        x = self.model(data[0])
+        y = data[1]
         train_loss = F.nll_loss(x, y)
-
-        #outputs = x.argmax(axis=1)
-        #outputs_probs = torch.exp(x)[:, 1]
 
         return train_loss
 
     def forward(self, data):
-        #print("FORWARD") 
         x = self.model(data)
         return x
-
-    def validation_step(self, data, batch_idx):
-        #print("VAL STEP") 
         
-        x = self.model(data)
-        y = data.y
+    def validation_step(self, data, batch_idx):
+        x = self.model(data[0])
+        y = data[1]
+        print(type(x))
+        print(type(y))
+        print(x)
+        print(y)
+        print(x.shape)
+        print(y.shape)
         validation_loss = F.nll_loss(x, y)
-
-        #outputs = x.argmax(axis=1)
-        #outputs_probs = torch.exp(x)[:, 1]
 
         return validation_loss
 
     def test_step(self, data, batch_idx):
-        #print("TEST STEP") 
-        
-        x = self.model(data)
-        y = data.y
+        x = self.model(data[0])
+        y = data[1]
         test_loss = F.nll_loss(x, y)
-        
-        #outputs = x.argmax(axis=1)
-        #outputs_probs = torch.exp(x)[:, 1]
 
         return test_loss
     

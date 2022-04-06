@@ -294,15 +294,23 @@ def AL_diversity_cluster(new_x, take_until, diversity_nums):
 def AL_deep_discriminator(current_train_loader, new_x, take_until, model):
     discriminator_y,discriminator_x = model.get_output_and_embeddings(current_train_loader)#[0]
 
-    print(discriminator_y)
-    print(discriminator_x)
-    discriminator_model = graph_model.MultiLabelClassifier(model.cfg)
+    discriminator_y = torch.Tensor(discriminator_y)
+    discriminator_x = torch.Tensor(discriminator_x)
 
-    #split this data?
+    print("DY",discriminator_y)
+    print("DX",discriminator_x)
+    embeddings_size = discriminator_x.shape[1]
+    print("ES",embeddings_size)
+    discriminator_model = graph_model.MultiLabelClassifier(model.cfg, embeddings_size)
+
+    #split this data
     train_x, val_x, train_y, val_y = train_test_split(discriminator_x, discriminator_y, test_size=0.2, random_state=42)
 
-    train_data = DataLoader(TensorDataset(torch.Tensor(train_x),torch.Tensor(train_y)),batch_size=model.cfg.batch_size, shuffle=False, num_workers=model.cfg.workers_available, pin_memory=True)
-    val_data = DataLoader(TensorDataset(torch.Tensor(val_x),torch.Tensor(val_y)),batch_size=model.cfg.batch_size, shuffle=False, num_workers=model.cfg.workers_available, pin_memory=True)
+    print(type(train_x))
+    print(type(train_y))
+
+    train_data = DataLoader(TensorDataset(train_x,train_y),batch_size=model.cfg.batch_size, shuffle=False, num_workers=model.cfg.workers_available, pin_memory=True)
+    val_data = DataLoader(TensorDataset(val_x,val_y),batch_size=model.cfg.batch_size, shuffle=False, num_workers=model.cfg.workers_available, pin_memory=True)
     
     #train discriminator
     es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=7)  #validation_f1_score_macro / validation_loss
@@ -329,12 +337,10 @@ def AL_deep_discriminator(current_train_loader, new_x, take_until, model):
 
     #pred_y = np.exp(predictions[:,1]).numpy()
 
-    pred_y = discriminator_model.predict(new_x)
-
     from_most_error_ids = np.argsort(pred_y)
-    most_uncertain_ids = from_most_uncertain_ids[:take_until]
+    most_error_ids = from_most_error_ids[:take_until]
 
-    return most_uncertain_ids
+    return most_error_ids
 
 
 def create_discriminator():
