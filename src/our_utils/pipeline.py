@@ -4,6 +4,7 @@ sys.path.append('..')
 project_folder = os.path.join('..')
 
 import numpy as np
+import torch
 import time
 #import our scripts
 from . import AL
@@ -138,6 +139,7 @@ class Pipeline():
                 keep_all_new = doing_warm_start and iteration_num==0
 
                 print("MERGE NEW DATA")
+
                 current_data, rem_data, (new_positives, new_negatives) = AL.merge_new_data(current_loaders, current_data, new_data,
                                                                                             self.cfg, keep_all_new, #FEDE_WHAT_TO_DO
                                                                                             model, self.trainer, 
@@ -145,8 +147,18 @@ class Pipeline():
                                                                                             self.cfg.batch_size)
 
                 wandb.finish()
-
+                
                 del current_loaders["train"]
+            
+                labels = []
+
+                for graph in current_data["train"]:
+                    labels.append(graph.y)
+
+                counts = torch.bincount(torch.tensor(labels))
+
+                loss_weights = counts/min(counts)
+                loss_weights = loss_weights.to('cuda:{}'.format(self.cfg.gpus_available[0]))
 
                 current_loaders["train"] = None
 
@@ -167,6 +179,7 @@ class Pipeline():
                 self.cfg.current_negatives = current_negatives
                 self.cfg.new_positives = new_positives
                 self.cfg.new_negatives = new_negatives
+                self.cfg.loss_weights = loss_weights
                 
                 del model
                 del self.trainer

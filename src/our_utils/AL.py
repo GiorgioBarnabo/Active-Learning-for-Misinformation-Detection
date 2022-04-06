@@ -292,52 +292,66 @@ def AL_diversity_cluster(new_x, take_until, diversity_nums):
     return to_take_ids
 
 def AL_deep_discriminator(current_train_loader, new_x, take_until, model):
-    discriminator_y,discriminator_x = model.get_output_and_embeddings(current_train_loader)#[0]
+    
+    discriminator_y, discriminator_x = model.get_output_and_embeddings(current_train_loader)#[0]
 
-    discriminator_y = torch.Tensor(discriminator_y)
+    discriminator_y = torch.Tensor(discriminator_y).long()
     discriminator_x = torch.Tensor(discriminator_x)
 
     print("DY",discriminator_y)
     print("DX",discriminator_x)
     embeddings_size = discriminator_x.shape[1]
     print("ES",embeddings_size)
-    discriminator_model = graph_model.MultiLabelClassifier(model.cfg, embeddings_size)
 
+    print(discriminator_y)
+    
+    counts = torch.bincount(discriminator_y)
+
+    loss_weights = counts/min(counts)
+
+    loss_weights = loss_weights.to('cuda:{}'.format(model.cfg.gpus_available[0]))
+
+    model.cfg.deep_al_weights = loss_weights
+
+    discriminator_model = graph_model.MultiLabelClassifier(model.cfg, embeddings_size)
+    
     #split this data
     train_x, val_x, train_y, val_y = train_test_split(discriminator_x, discriminator_y, test_size=0.2, random_state=42)
 
-    print(type(train_x))
-    print(type(train_y))
-
-    train_data = DataLoader(TensorDataset(train_x,train_y),batch_size=model.cfg.batch_size, shuffle=False, num_workers=model.cfg.workers_available, pin_memory=True)
+    train_data = DataLoader(TensorDataset(train_x,train_y),batch_size=model.cfg.batch_size, shuffle=True, num_workers=model.cfg.workers_available, pin_memory=True)
     val_data = DataLoader(TensorDataset(val_x,val_y),batch_size=model.cfg.batch_size, shuffle=False, num_workers=model.cfg.workers_available, pin_memory=True)
-    
+
     #train discriminator
-    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=7)  #validation_f1_score_macro / validation_loss
+    #wandb_logger = pl.loggers.WandbLogger(project = "Deep_Discriminator", entity = "misinfo_detection")
+    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=5) #validation_f1_score_macro / validation_loss
+    checkpointing = pl.callbacks.ModelCheckpoint(monitor="validation_loss", mode='min')
 
     trainer = pl.Trainer(
-        gpus=model.cfg.gpus_available, #change based on availability
-        #strategy="ddp", #pl.plugins.DDPPlugin(find_unused_parameters=False),
-        # default_root_dir = "../../out/models_checkpoints/",
+        gpus=model.cfg.gpus_available,
         max_epochs=model.cfg.epochs,
         accelerator="auto",
-        callbacks=[es],
+        #logger=wandb_logger,
+        callbacks=[es, checkpointing],
         stochastic_weight_avg=True,
         accumulate_grad_batches=2,
         precision=16,
     )
     trainer.fit(discriminator_model, train_data, val_data)
     
-    model_input = DataLoader(new_x, batch_size=model.cfg.batch_size, num_workers=model.cfg.workers_available)
+    inference_dataloader = DataLoader(new_x, batch_size=model.cfg.batch_size, shuffle=False, num_workers=model.cfg.workers_available, pin_memory=True)
 
-    pred_y = trainer.predict(discriminator_model, model_input)#[0]
-    print(predictions)
+    _ , inference_x = model.get_output_and_embeddings(inference_dataloader)#[0]
 
-    #predictions = torch.cat(predictions, 0)
+    inference_dataloader = DataLoader(inference_x, batch_size=model.cfg.batch_size, shuffle=False, num_workers=model.cfg.workers_available, pin_memory=True)
 
-    #pred_y = np.exp(predictions[:,1]).numpy()
+    predictions = trainer.predict(discriminator_model, inference_dataloader)#[0]
 
-    from_most_error_ids = np.argsort(pred_y)
+    predictions = torch.cat(predictions, 0)
+
+    predictions = np.exp(predictions[:, 1]).numpy()
+
+    from_most_error_ids = np.argsort(-predictions)
+
     most_error_ids = from_most_error_ids[:take_until]
 
     return most_error_ids

@@ -52,20 +52,20 @@ def run_single_config(cfg):
     cfg.warm_start_years = [np.inf, np.inf]
     cfg.training_years = [2005,2021]
     cfg.batch_size = 32
-    cfg.number_AL_iteration = 8
+    cfg.number_AL_iteration = 10
     cfg.tot_num_checked_urls = 200
     cfg.retrain_from_scratch = True
     cfg.train_last_samples = np.inf
     cfg.val_last_samples = np.inf
     cfg.add_val_to_train  = False
     
-    cfg.epochs = 1 ####CHANGE!!!!!
+    cfg.epochs = 50 ####CHANGE!!!!!
     cfg.lr = 0.005
     cfg.weight_decay = 0.01
     cfg.nhid = 128
     cfg.concat = True
     cfg.workers_available = 4
-    cfg.gpus_available = [5]
+    cfg.gpus_available = [2]
     cfg.num_classes = 2 
     cfg.nb_samples = 1
 
