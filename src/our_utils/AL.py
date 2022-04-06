@@ -5,10 +5,14 @@ import numpy as np
 import random
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.model_selection import train_test_split
 
 import torch
-from torch_geometric.data import DataLoader, DataListLoader
-from torch.utils.data import ConcatDataset
+from torch_geometric.data import DataLoader
+from torch.utils.data import ConcatDataset, TensorDataset #,DataLoader
+import pytorch_lightning as pl
+
+from . import graph_model
 
 def keep_sum_vec(vec, sm):
     ##### THIS FUNCTION IS JUST TO KEEP THE SUM OF vec EQUAL TO sm
@@ -26,7 +30,7 @@ def keep_sum_vec(vec, sm):
     vec = vec.astype(int)
     return vec
 
-def merge_new_data(current_data, new_data, AL_parameters, keep_all_new, model, trainer, workers_available, batch_size):
+def merge_new_data(current_loaders, current_data, new_data, AL_parameters, keep_all_new, model, trainer, workers_available, batch_size):
     if keep_all_new: #data['x_train'] is None:
         new_ids = None
     else:
@@ -44,7 +48,10 @@ def merge_new_data(current_data, new_data, AL_parameters, keep_all_new, model, t
             elif AL_parameters.AL_method == "diversity-cluster":
                 new_ids = AL_diversity_cluster(new_data, take_until, AL_parameters.diversity_nums)
             elif AL_parameters.AL_method == "deep-discriminator":
-                new_ids = AL_deep_discriminator(current_data['train'], new_data, take_until, AL_parameters.diversity_nums)
+                if current_loaders['train'] is not None:
+                    new_ids = AL_deep_discriminator(current_loaders['train'], new_data, take_until, model)
+                else:
+                    new_ids = AL_random(take_until)
             elif AL_parameters.AL_method == "combined":
                 new_ids_divided = []
                 AL_nums_divided = []
@@ -87,10 +94,10 @@ def merge_new_data(current_data, new_data, AL_parameters, keep_all_new, model, t
     rem_data = None
     if new_ids is not None:
         #if AL_parameters.number_AL_iteration>0: #if offline
-        print(new_ids)
-        print(type(new_ids))
+        #print(new_ids)
+        #print(type(new_ids))
         rem_range = np.array(list(set(range(len(new_data))).difference(set(list(new_ids)))))
-        print(rem_range)
+        #print(rem_range)
         rem_data = torch.utils.data.Subset(new_data, rem_range)
         
         new_data = torch.utils.data.Subset(new_data, new_ids)
@@ -284,26 +291,43 @@ def AL_diversity_cluster(new_x, take_until, diversity_nums):
 
     return to_take_ids
 
+def AL_deep_discriminator(current_train_loader, new_x, take_until, model):
+    discriminator_y,discriminator_x = model.get_output_and_embeddings(current_train_loader)#[0]
 
-def AL_deep_discriminator(current_train, new_x, take_until, model):
-    model_input = DataLoader(current_train, batch_size=len(current_train))
-    
-    pred_y, discriminator_x = model.get_intermediary_activations(model_input)
-    
-    y_test = []
-    for dat in model_input:
-        y_test += list(dat.y.cpu().detach().numpy())
-    y_test = np.array(y_test)
-
-    discriminator_y = np.abs(pred_y - y_test)
-
-    discriminator_model = None#....
+    print(discriminator_y)
+    print(discriminator_x)
+    discriminator_model = graph_model.MultiLabelClassifier(model.cfg)
 
     #split this data?
+    train_x, val_x, train_y, val_y = train_test_split(discriminator_x, discriminator_y, test_size=0.2, random_state=42)
 
+    train_data = DataLoader(TensorDataset(torch.Tensor(train_x),torch.Tensor(train_y)),batch_size=model.cfg.batch_size, shuffle=False, num_workers=model.cfg.workers_available, pin_memory=True)
+    val_data = DataLoader(TensorDataset(torch.Tensor(val_x),torch.Tensor(val_y)),batch_size=model.cfg.batch_size, shuffle=False, num_workers=model.cfg.workers_available, pin_memory=True)
+    
     #train discriminator
+    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=7)  #validation_f1_score_macro / validation_loss
 
-    #discriminator_model.fit(discriminator_x,discriminator_y)
+    trainer = pl.Trainer(
+        gpus=model.cfg.gpus_available, #change based on availability
+        #strategy="ddp", #pl.plugins.DDPPlugin(find_unused_parameters=False),
+        # default_root_dir = "../../out/models_checkpoints/",
+        max_epochs=model.cfg.epochs,
+        accelerator="auto",
+        callbacks=[es],
+        stochastic_weight_avg=True,
+        accumulate_grad_batches=2,
+        precision=16,
+    )
+    trainer.fit(discriminator_model, train_data, val_data)
+    
+    model_input = DataLoader(new_x, batch_size=model.cfg.batch_size, num_workers=model.cfg.workers_available)
+
+    pred_y = trainer.predict(discriminator_model, model_input)#[0]
+    print(predictions)
+
+    #predictions = torch.cat(predictions, 0)
+
+    #pred_y = np.exp(predictions[:,1]).numpy()
 
     pred_y = discriminator_model.predict(new_x)
 

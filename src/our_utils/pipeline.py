@@ -138,7 +138,7 @@ class Pipeline():
                 keep_all_new = doing_warm_start and iteration_num==0
 
                 print("MERGE NEW DATA")
-                current_data, rem_data, (new_positives, new_negatives) = AL.merge_new_data(current_data, new_data,
+                current_data, rem_data, (new_positives, new_negatives) = AL.merge_new_data(current_loaders, current_data, new_data,
                                                                                             self.cfg, keep_all_new, #FEDE_WHAT_TO_DO
                                                                                             model, self.trainer, 
                                                                                             self.cfg.workers_available,

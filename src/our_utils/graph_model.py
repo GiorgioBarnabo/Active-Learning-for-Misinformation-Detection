@@ -89,7 +89,7 @@ def initialize_graph_model(cfg):
         stochastic_weight_avg=True,
         accumulate_grad_batches=2,
         precision=16,
-    ) 
+    )
 
     return model, trainer
 
@@ -199,10 +199,138 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 
         return test_loss
 
+    
+    #def set_embeddings_hook(self):
+        
+
+    def get_output_and_embeddings(self, loader):
+        activation = {}
+        def getActivation(name):
+            def hook(self, input, output):
+                activation[name] = output.detach()
+            return hook
+
+        if self.cfg.model in ['gcn', 'gat', 'sage']:
+            layer = self.model.lin0
+        elif self.cfg.model == 'gcnfn':
+            layer = self.model.fc0
+        elif self.cfg.model == 'bigcn':
+            layer = self.model.TDrumorGCN
+
+        h = layer.register_forward_hook(getActivation('embedding'))
+
+        #pred_y = self.model(data)
+        #real_y = data.y
+        #error = torch.abs(pred_y - real_y)
+        
+        #print(self.activation['embedding'])
+
+        #outputs = x.argmax(axis=1)
+        #outputs_probs = torch.exp(x)[:, 1]
+        
+        activations_scores = []
+        err_log = []
+        
+        for data in loader:
+            out = self.model(data).argmax(axis=1)
+            print(out)
+            print(data.y)
+            err = torch.abs(out-data.y)
+            print(err)
+            err_log += list(err.cpu().detach().numpy())
+            print(err_log)
+            #out_log += list(F.softmax(out, dim=1).cpu().detach().numpy())
+            activations_scores.append(activation['embedding'])
+        activations_scores = torch.cat(activations_scores,dim=0)
+        
+        #h.remove()
+        #return np.array(out_log)[:,1], activations_scores
+        return err_log, activations_scores
+
     def configure_optimizers(self):
         #print("CONF OPTIM") 
         optimizer = torch.optim.Adam(
             self.parameters(), lr=self.cfg.lr, weight_decay=self.cfg.weight_decay
         )
         #print("OPTIM END")
+        return optimizer
+
+
+# https://towardsdatascience.com/pytorch-how-and-when-to-use-module-sequential-modulelist-and-moduledict-7a54597b5f17
+# https://towardsdatascience.com/type-hints-in-python-everything-you-need-to-know-in-5-minutes-24e0bad06d0b
+from typing import List
+from typing import Optional
+
+class CoreNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+        layers: List[nn.Module] = []
+
+        input_dim: int = 768
+        for output_dim in [1024,256,64]:
+            layers.append(nn.Linear(input_dim, output_dim))
+            layers.append(nn.BatchNorm1d(output_dim)),
+            layers.append(nn.ReLU())
+            layers.append(nn.Dropout(0.2))
+            input_dim = output_dim
+
+        layers.append(nn.Linear(input_dim, 2))
+
+        self.layers: nn.Module = nn.Sequential(*layers)
+
+    def forward(self, data: torch.Tensor) -> torch.Tensor:
+        return self.layers(data)
+
+class MultiLabelClassifier(pl.LightningModule):
+    def __init__(self,config):
+        super().__init__()
+        self.cfg = config
+        self.model = CoreNet()
+        #self.save_hyperparameters()
+    
+    def training_step(self, data, batch_idx):
+        #print("TRAIN STEP") 
+        
+        x = self.model(data)
+        y = data.y
+        train_loss = F.nll_loss(x, y)
+
+        #outputs = x.argmax(axis=1)
+        #outputs_probs = torch.exp(x)[:, 1]
+
+        return train_loss
+
+    def forward(self, data):
+        #print("FORWARD") 
+        x = self.model(data)
+        return x
+
+    def validation_step(self, data, batch_idx):
+        #print("VAL STEP") 
+        
+        x = self.model(data)
+        y = data.y
+        validation_loss = F.nll_loss(x, y)
+
+        #outputs = x.argmax(axis=1)
+        #outputs_probs = torch.exp(x)[:, 1]
+
+        return validation_loss
+
+    def test_step(self, data, batch_idx):
+        #print("TEST STEP") 
+        
+        x = self.model(data)
+        y = data.y
+        test_loss = F.nll_loss(x, y)
+        
+        #outputs = x.argmax(axis=1)
+        #outputs_probs = torch.exp(x)[:, 1]
+
+        return test_loss
+    
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(
+            self.parameters(), lr=self.cfg.lr, weight_decay=self.cfg.weight_decay
+        )
         return optimizer

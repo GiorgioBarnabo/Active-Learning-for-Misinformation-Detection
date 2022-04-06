@@ -59,7 +59,7 @@ def run_single_config(cfg):
     cfg.val_last_samples = np.inf
     cfg.add_val_to_train  = False
     
-    cfg.epochs = 30
+    cfg.epochs = 1 ####CHANGE!!!!!
     cfg.lr = 0.005
     cfg.weight_decay = 0.01
     cfg.nhid = 128
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     #SINGLE:
     
     for dataset in ["condor"]:
-        for AL in ["uncertainty-margin", "random"]:
+        for AL in ["deep-discriminator","uncertainty-margin", "random"]:
     
             cfg = {
                 'dataset': dataset,
