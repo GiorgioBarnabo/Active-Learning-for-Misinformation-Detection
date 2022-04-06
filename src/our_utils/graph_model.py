@@ -81,7 +81,7 @@ def initialize_graph_model(cfg):
     trainer = pl.Trainer(
         gpus=cfg.gpus_available, #change based on availability
         #strategy="ddp", #pl.plugins.DDPPlugin(find_unused_parameters=False),
-        # default_root_dir = "../../out/models_checkpoints/",
+        # default_root_dir = "../.. /out/models_checkpoints/",
         max_epochs=cfg.epochs,
         accelerator="auto",
         logger=wandb_logger,
@@ -293,7 +293,7 @@ class MultiLabelClassifier(pl.LightningModule):
     
     def training_step(self, data, batch_idx):
         x = self.model(data[0])
-        y = data[1]
+        y = data[1].long()
         train_loss = F.nll_loss(x, y)
 
         return train_loss
@@ -304,20 +304,16 @@ class MultiLabelClassifier(pl.LightningModule):
         
     def validation_step(self, data, batch_idx):
         x = self.model(data[0])
-        y = data[1]
-        print(type(x))
-        print(type(y))
-        print(x)
-        print(y)
-        print(x.shape)
-        print(y.shape)
+        y = data[1].long()
         validation_loss = F.nll_loss(x, y)
+
+        print("validation_loss", validation_loss)
 
         return validation_loss
 
     def test_step(self, data, batch_idx):
         x = self.model(data[0])
-        y = data[1]
+        y = data[1].long()
         test_loss = F.nll_loss(x, y)
 
         return test_loss
