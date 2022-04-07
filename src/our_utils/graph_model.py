@@ -1,59 +1,14 @@
 import argparse
-import time
-from tqdm import tqdm
-import pickle
-import numpy as np
-from sklearn import metrics
-
 import torch
 from torch import nn
 import torchmetrics
 import torch.nn.functional as F
 import pytorch_lightning as pl
-from torch_geometric.nn import global_max_pool as gmp
-from torch_geometric.nn import GCNConv, SAGEConv, GATConv, DataParallel
-from torch.utils.data import random_split
-from torch_geometric.loader import DataLoader
-import wandb
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-from pytorch_lightning.plugins import DDPPlugin
 from . import gnn_base_models
 import os
 project_folder = os.path.join('..')
 
-
-#import os
-#os.chdir(
-#    "/home/barnabog/Online-Active-Learning-for-Misinformation-Detection/src/gnn_models/"  #ATTENTO_FEDE
-#)
-
-
-#wandb.login()
-
-import sys
-
-# insert at 1, 0 is the script path (or '' in REPL)
 import os
-
-'''
-os.chdir(
-    "/home/barnabog/Online-Active-Learning-for-Misinformation-Detection/src/gnn_models/"
-)
-'''
-
-#sys.path.append("..")
-
-
-# sys.path.insert(1, '')
-
-# from our_utils.utils.data_loader import *
-#from our_utils.utils.eval_helper import *
-
-#from our_utils.utils import data_loader
-
-#sys.modules["new_utils.graph_utils.data_loader"] = data_loader
-#sys.modules["utils.data_loader"] = data_loader
-
 
 def initialize_graph_model(cfg):
     #print("PARSER")
@@ -71,11 +26,12 @@ def initialize_graph_model(cfg):
         save_dir = os.path.join(project_folder,"out","training_logs","wandb"),
     )
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=7)  #validation_f1_score_macro / validation_loss
+    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=10)  #validation_f1_score_macro / validation_loss
+    
     checkpointing = pl.callbacks.ModelCheckpoint(
         monitor="validation_loss",
         dirpath=os.path.join(project_folder,"out","models"),
-        #filename = str(self.experiment_id), #!!!!!!!WHY?!!!!!!
+        mode='min'
     )
     
     trainer = pl.Trainer(
@@ -101,7 +57,6 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
 
         self.save_hyperparameters()
         #print("HYPRS SAVED")
-        
         if self.cfg.model in ['gcn', 'gat', 'sage']:
             self.model = gnn_base_models.GNN(self.cfg)
         elif self.cfg.model == 'gcnfn':

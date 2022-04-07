@@ -8,6 +8,11 @@
 /old_code/*
 /out/models/*
 /out/training_logs/wandb/*
+/out/*
+/src/None
+/src/lightning_logs/*
+
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

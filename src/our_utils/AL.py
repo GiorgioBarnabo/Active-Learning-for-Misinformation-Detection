@@ -48,8 +48,8 @@ def merge_new_data(current_loaders, current_data, new_data, AL_parameters, keep_
             elif AL_parameters.AL_method == "diversity-cluster":
                 new_ids = AL_diversity_cluster(new_data, take_until, AL_parameters.diversity_nums)
             elif AL_parameters.AL_method == "deep-discriminator":
-                if current_loaders['train'] is not None:
-                    new_ids = AL_deep_discriminator(current_loaders['train'], new_data, take_until, model)
+                if current_loaders['val'] is not None:
+                    new_ids = AL_deep_discriminator(current_loaders['val'], new_data, take_until, model)
                 else:
                     new_ids = AL_random(take_until)
             elif AL_parameters.AL_method == "combined":

@@ -4,22 +4,7 @@ import numpy as np
 
 from our_utils import pipeline
 from our_utils import custom_wandb
-
-import logging
 import wandb
-import yaml
-
-# @hydra.main(config_path="../conf", config_name="config")
-# def my_app(config) -> None:
-#     print(config.lr)
-
-# if __name__=='__main__':
-#     my_app()
-
-#from pipeline import prepare_pipeline
-
-#@hydra.main(config_path="../conf", config_name="config")
-
 
 sweep_config = {
     'method': 'random',  # Randomly sample the hyperparameter space (alternatives: grid, bayes)
@@ -46,28 +31,28 @@ def run_config():
         cfg = run.config
 
         run_single_config(cfg)
-        
 
 def run_single_config(cfg):
+
     cfg.warm_start_years = [np.inf, np.inf]
     cfg.training_years = [2005,2021]
     cfg.batch_size = 32
-    cfg.number_AL_iteration = 10
-    cfg.tot_num_checked_urls = 200
+    cfg.number_AL_iteration = 40
+    cfg.tot_num_checked_urls = 400
     cfg.retrain_from_scratch = True
     cfg.train_last_samples = np.inf
     cfg.val_last_samples = np.inf
     cfg.add_val_to_train  = False
     
-    cfg.epochs = 50 ####CHANGE!!!!!
-    cfg.lr = 0.005
+    cfg.epochs = 100
+    cfg.lr = 0.001
     cfg.weight_decay = 0.01
     cfg.nhid = 128
     cfg.concat = True
     cfg.workers_available = 4
-    cfg.gpus_available = [2]
+    cfg.gpus_available = [3]
     cfg.num_classes = 2 
-    cfg.nb_samples = 1
+    cfg.nb_samples = 4
 
     #Check if configuration already run
     experiments_list_file = os.path.join("..","out","experiments", "experiments_list.pkl")
@@ -108,35 +93,15 @@ def run_single_config(cfg):
     #     pkl.dump(experiments_list, f)
 
 if __name__ == "__main__":
-    #config_path="../cfg"
-    #config_name="sweep_config_new"
-    # with open(os.path.join(config_path,config_name+".yaml"), 'r') as f:
-    #     cfg = yaml.safe_load(f)
-    #print(cfg)
-
-    # cfg = custom_wandb.dotdict(cfg)
-
-    # base_config, sweep_config = custom_wandb.divide_sweep(cfg)
-    #print("BC",base_config)
-    #print("SC",sweep_config)
-
+    for dataset in ['condor']:
+        for model in ['gcn', 'gat', 'sage', 'gcnfn', 'bigcn']:
+            for AL in ['deep-discriminator', 'uncertainty-margin', 'random']:
     
-    #os.environ["WANDB_CONSOLE"] = "off" ####TO AVOID ValueError('signal only works in main thread')???
-
-    #SWEEP:
-    #sweep_id = wandb.sweep(sweep_config)#, project="Controversy_Detection")
-    #wandb.agent(sweep_id, function=run_config, count=1)
-
-    #SINGLE:
-    
-    for dataset in ["condor"]:
-        for AL in ["deep-discriminator","uncertainty-margin", "random"]:
-    
-            cfg = {
-                'dataset': dataset,
-                'model': "gcn",
-                'AL_method':AL}
-                
-            cfg = custom_wandb.dotdict(cfg)
-            run_single_config(cfg)
+                cfg = {
+                    'dataset': dataset,
+                    'model': model,
+                    'AL_method':AL}
+                    
+                cfg = custom_wandb.dotdict(cfg)
+                run_single_config(cfg)
 
