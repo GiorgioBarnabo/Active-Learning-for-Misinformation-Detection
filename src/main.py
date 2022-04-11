@@ -37,8 +37,8 @@ def run_single_config(cfg):
     cfg.warm_start_years = [np.inf, np.inf]
     cfg.training_years = [2005,2021]
     cfg.batch_size = 32
-    cfg.number_AL_iteration = 40
-    cfg.tot_num_checked_urls = 400
+    cfg.number_AL_iteration = 30
+    cfg.tot_num_checked_urls = 300
     cfg.retrain_from_scratch = True
     cfg.train_last_samples = np.inf
     cfg.val_last_samples = np.inf
@@ -50,9 +50,9 @@ def run_single_config(cfg):
     cfg.nhid = 128
     cfg.concat = True
     cfg.workers_available = 4
-    cfg.gpus_available = [3]
+    cfg.gpus_available = [5]
     cfg.num_classes = 2 
-    cfg.nb_samples = 4
+    cfg.nb_samples = 1
 
     #Check if configuration already run
     experiments_list_file = os.path.join("..","out","experiments", "experiments_list.pkl")
@@ -96,12 +96,11 @@ if __name__ == "__main__":
     for dataset in ['condor']:
         for model in ['gcn', 'gat', 'sage', 'gcnfn', 'bigcn']:
             for AL in ['deep-discriminator', 'uncertainty-margin', 'random']:
-    
-                cfg = {
-                    'dataset': dataset,
-                    'model': model,
-                    'AL_method':AL}
-                    
-                cfg = custom_wandb.dotdict(cfg)
-                run_single_config(cfg)
+                for _ in range(3):
+                    cfg = {
+                        'dataset': dataset,
+                        'model': model,
+                        'AL_method': AL}   
+                    cfg = custom_wandb.dotdict(cfg)
+                    run_single_config(cfg)
 
