@@ -141,7 +141,9 @@ class Pipeline():
                                                                                             self.cfg, keep_all_new, #FEDE_WHAT_TO_DO
                                                                                             model, self.trainer, 
                                                                                             self.cfg.workers_available,
-                                                                                            self.cfg.batch_size)
+                                                                                            self.cfg.batch_size,
+                                                                                            self.cfg.AL_iteration,
+                                                                                            self.cfg.iteration_of_random_warm_start)
 
                 wandb.finish()
                 
@@ -154,7 +156,7 @@ class Pipeline():
 
                 counts = torch.bincount(torch.tensor(labels))
 
-                loss_weights = counts/min(counts)
+                loss_weights = max(counts)/counts
                 loss_weights = loss_weights.to('cuda:{}'.format(self.cfg.gpus_available[0]))
 
                 current_loaders["train"] = None
@@ -177,7 +179,7 @@ class Pipeline():
                 self.cfg.new_positives = new_positives
                 self.cfg.new_negatives = new_negatives
                 self.cfg.loss_weights = loss_weights
-                
+    
                 del model
                 del self.trainer
                 

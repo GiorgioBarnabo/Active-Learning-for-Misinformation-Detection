@@ -30,7 +30,12 @@ def keep_sum_vec(vec, sm):
     vec = vec.astype(int)
     return vec
 
-def merge_new_data(current_loaders, current_data, new_data, AL_parameters, keep_all_new, model, trainer, workers_available, batch_size):
+def merge_new_data(current_loaders, 
+        current_data, new_data, 
+        AL_parameters, keep_all_new, 
+        model, trainer, workers_available, 
+        batch_size, AL_iteration,
+        iteration_of_random_warm_start):
     if keep_all_new: #data['x_train'] is None:
         new_ids = None
     else:
@@ -39,7 +44,7 @@ def merge_new_data(current_loaders, current_data, new_data, AL_parameters, keep_
         else:
             take_until = min(len(new_data),AL_parameters.num_urls_k)
 
-            if AL_parameters.AL_method == "random":
+            if AL_parameters.AL_method == "random" or AL_iteration < iteration_of_random_warm_start:
                 print("AL: RANDOM")
                 new_ids = AL_random(take_until)
             elif AL_parameters.AL_method == "uncertainty-margin":
@@ -302,12 +307,10 @@ def AL_deep_discriminator(current_train_loader, new_x, take_until, model):
     print("DX",discriminator_x)
     embeddings_size = discriminator_x.shape[1]
     print("ES",embeddings_size)
-
-    print(discriminator_y)
     
     counts = torch.bincount(discriminator_y)
 
-    loss_weights = counts/min(counts)
+    loss_weights = max(counts)/counts
 
     loss_weights = loss_weights.to('cuda:{}'.format(model.cfg.gpus_available[0]))
 

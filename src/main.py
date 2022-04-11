@@ -5,6 +5,7 @@ import numpy as np
 from our_utils import pipeline
 from our_utils import custom_wandb
 import wandb
+import torch
 
 sweep_config = {
     'method': 'random',  # Randomly sample the hyperparameter space (alternatives: grid, bayes)
@@ -37,6 +38,7 @@ def run_single_config(cfg):
     cfg.warm_start_years = [np.inf, np.inf]
     cfg.training_years = [2005,2021]
     cfg.batch_size = 32
+    cfg.iteration_of_random_warm_start = 5
     cfg.number_AL_iteration = 30
     cfg.tot_num_checked_urls = 300
     cfg.retrain_from_scratch = True
@@ -53,6 +55,7 @@ def run_single_config(cfg):
     cfg.gpus_available = [5]
     cfg.num_classes = 2 
     cfg.nb_samples = 1
+    cfg.loss_weights_val = torch.tensor([1.2791, 1.0000]).to('cuda:{}'.format(cfg.gpus_available[0]))
 
     #Check if configuration already run
     experiments_list_file = os.path.join("..","out","experiments", "experiments_list.pkl")
@@ -95,12 +98,11 @@ def run_single_config(cfg):
 if __name__ == "__main__":
     for dataset in ['condor']:
         for model in ['gcn', 'gat', 'sage', 'gcnfn', 'bigcn']:
-            for AL in ['deep-discriminator', 'uncertainty-margin', 'random']:
-                for _ in range(3):
-                    cfg = {
-                        'dataset': dataset,
-                        'model': model,
-                        'AL_method': AL}   
-                    cfg = custom_wandb.dotdict(cfg)
-                    run_single_config(cfg)
+            for AL in ['random', 'uncertainty-margin', 'deep-discriminator']:
+                cfg = {
+                    'dataset': dataset,
+                    'model': model,
+                    'AL_method': AL}   
+                cfg = custom_wandb.dotdict(cfg)
+                run_single_config(cfg)
 

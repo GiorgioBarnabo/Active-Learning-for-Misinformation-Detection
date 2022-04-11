@@ -113,7 +113,7 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         
         x = self.model(data)
         y = data.y
-        validation_loss = F.nll_loss(x, y, weight=self.cfg.loss_weights)
+        validation_loss = F.nll_loss(x, y, weight=self.cfg.loss_weights_val)
 
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]
@@ -136,7 +136,7 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         
         x = self.model(data)
         y = data.y
-        test_loss = F.nll_loss(x, y, weight=self.cfg.loss_weights)
+        test_loss = F.nll_loss(x, y)
         
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]
@@ -306,7 +306,7 @@ class MultiLabelClassifier(pl.LightningModule):
     def test_step(self, data, batch_idx):
         x = self.model(data[0])
         y = data[1]#.long()
-        test_loss = F.nll_loss(x, y, weight=self.cfg.deep_al_weights)
+        test_loss = F.nll_loss(x, y)
 
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]
