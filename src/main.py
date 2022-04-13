@@ -88,16 +88,13 @@ def run_single_config(cfg):
     print("RUN PIPELINE")
     pipeline_obj.run_pipeline()
 
-    #print("END PIPELINE")
-    #pipeline_obj.end_pipeline()
-
     # print("SAVE IN EXPERIMENTS_LIST")
     # with open(experiments_list_file, "wb") as f:
     #     pkl.dump(experiments_list, f)
 
 if __name__ == "__main__":
-    for dataset in ['condor']:
-        for model in ['gcnfn']: #'bigcn', 'gcn', 'gat', 'sage'
+    for dataset in ["politifact"]: #"politifact"
+        for model in ['bigcn']: #'bigcn', 'gcn', 'gat', 'sage' 'gcnfn'
             for AL in ['deep-discriminator', 'uncertainty-margin', 'random']:
                 cfg = {
                     'dataset': dataset,
@@ -105,4 +102,3 @@ if __name__ == "__main__":
                     'AL_method': AL}   
                 cfg = custom_wandb.dotdict(cfg)
                 run_single_config(cfg)
-

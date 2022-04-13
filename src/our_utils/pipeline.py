@@ -12,6 +12,7 @@ import wandb
 import psutil
 
 
+
 from torch_geometric.loader import DataLoader, DataListLoader
 sys.path.append("..")
 import pytorch_lightning as pl
@@ -24,7 +25,6 @@ class Pipeline():
         self.experiment_id = experiment_id
 
     def prepare_pipeline(self):
-
         if "num_urls_k" not in self.cfg:   #FEDE_WHAT_TO_DO
             if self.cfg.number_AL_iteration>0:
                 self.cfg.num_urls_k = int(self.cfg.tot_num_checked_urls//self.cfg.number_AL_iteration)
@@ -41,7 +41,7 @@ class Pipeline():
         self.data_folder = os.path.join(project_folder, 'data', "graph", self.cfg.dataset)
 
     def run_pipeline(self):
-        all_train_data, all_val_data, all_test_data = data_utils.load_graph_data(self.data_folder) #to load all data
+        all_train_data, all_val_data, all_test_data = data_utils.load_graph_data(self.data_folder, self.cfg.model) #to load all data
         print("all_train_data.keys", all_train_data.keys())
         print("all_val_data.keys", all_val_data.keys())
         print("all_test_data.keys", all_test_data.keys())
@@ -49,20 +49,6 @@ class Pipeline():
         print(len(all_train_data["2020"]))
         print(len(all_val_data["2020"]))
         print(len(all_test_data["ALL_TEST"]))
-
-        if self.cfg.model == "bigcn":
-            self.cfg.TDdroprate = 0.2
-            self.cfg.BUdroprate = 0.2
-            transformer = gnn_base_models.DropEdge(self.cfg.TDdroprate, self.cfg.BUdroprate)
-            new_datasets = []
-            for dataset in [all_train_data, all_val_data, all_test_data]:
-                new_dataset = []
-                for graph in dataset:
-                    new_dataset.append(transformer(graph))
-                new_datasets.append(new_dataset)
-            all_train_data = new_datasets[0]
-            all_val_data = new_datasets[1]
-            all_test_data = new_datasets[2] 
         
         first_key = list(all_train_data.keys())[0]
         self.cfg.num_features = all_train_data[first_key][0].num_features #FEDE_WHAT_TO_DO
