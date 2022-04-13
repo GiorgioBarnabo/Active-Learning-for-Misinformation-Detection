@@ -26,7 +26,7 @@ def initialize_graph_model(cfg):
         save_dir = os.path.join(project_folder,"out","training_logs","wandb"),
     )
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=10)  #validation_f1_score_macro / validation_loss
+    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=15)  #validation_f1_score_macro / validation_loss
     
     checkpointing = pl.callbacks.ModelCheckpoint(
         monitor="validation_loss",

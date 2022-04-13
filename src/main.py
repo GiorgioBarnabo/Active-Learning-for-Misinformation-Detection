@@ -52,7 +52,7 @@ def run_single_config(cfg):
     cfg.nhid = 128
     cfg.concat = True
     cfg.workers_available = 4
-    cfg.gpus_available = [5]
+    cfg.gpus_available = [2] #0,1,2,3,5,6,7
     cfg.num_classes = 2 
     cfg.nb_samples = 1
     cfg.loss_weights_val = torch.tensor([1.2791, 1.0000]).to('cuda:{}'.format(cfg.gpus_available[0]))
@@ -97,8 +97,8 @@ def run_single_config(cfg):
 
 if __name__ == "__main__":
     for dataset in ['condor']:
-        for model in ['gcn', 'gat', 'sage', 'gcnfn', 'bigcn']:
-            for AL in ['random', 'uncertainty-margin', 'deep-discriminator']:
+        for model in ['gcnfn']: #'bigcn', 'gcn', 'gat', 'sage'
+            for AL in ['deep-discriminator', 'uncertainty-margin', 'random']:
                 cfg = {
                     'dataset': dataset,
                     'model': model,
