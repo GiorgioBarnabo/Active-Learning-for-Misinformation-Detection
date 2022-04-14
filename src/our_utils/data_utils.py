@@ -4,7 +4,9 @@ import numpy as np
 import random
 from sklearn import metrics
 import pickle as pkl
+from . import gnn_base_models
 
+import torch
 from torch.utils.data import ConcatDataset, Subset
 from torch_geometric.loader import DataLoader, DataListLoader
 
@@ -15,13 +17,15 @@ sys.modules['utils'] = utils
 sys.modules["new_utils"] = utils 
 sys.modules["new_utils.graph_utils"] = utils
 
-def load_graph_data(data_folder):
+def load_graph_data(data_folder, model_name):
     divided_data_folder = os.path.join(data_folder,"train_val_test_graphs")
 
     app = []
     for data_split_name in ["training","validation","test"]:
         filename = data_split_name+"_graph.pickle"
-
+        if model_name=="bigcn":
+            filename = "bigcn_" + filename
+            
         with open(os.path.join(divided_data_folder,filename),"rb") as input_file:
             app.append(pkl.load(input_file))
     

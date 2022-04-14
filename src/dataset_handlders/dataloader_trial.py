@@ -19,25 +19,27 @@ import os
 
 print(os.getcwd())
 
-os.chdir('/home/barnabog/Online-Active-Learning-for-Misinformation-Detection/src')
+#os.chdir('/home/barnabog/Online-Active-Learning-for-Misinformation-Detection/src')
 sys.path.insert(1, '')
 #sys.path.append("/Online-Active-Learning-for-Misinformation-Detection/src/models/GNN-FakeNews/")
 
 print(sys.path)
 
-from new_utils.graph_utils.data_loader import *
-from new_utils.graph_utils.eval_helper import *
+sys.path.insert(1, '../')
+from our_utils.utils.data_loader import *
+from our_utils.utils.eval_helper import *
 
-project_folder = os.path.join('../../../')
+project_folder = os.path.join('../../')
 
 
-dataset_name = "condor"
+dataset_name = "gossipcop" #"politifact"#"gossipcop" #"condor"
 
-dataset = FNNDataset(root='../data', feature='bert', empty=False, name=dataset_name, transform=ToUndirected())
+is_bigcn = True
 
-loader = DataLoader
+dataset = FNNDataset(root=project_folder+'/data/graph/', feature='bert', empty=False, name=dataset_name, transform=[ToUndirected(),DropEdge(0.2, 0.2)][is_bigcn])
+#loader = DataLoader
 
-'''
+
 split_ratio = [0.60, 0.10, 0.20]
 
 num_training = int(len(dataset) * split_ratio[0])
@@ -51,26 +53,28 @@ training_set = Subset(dataset, train_idx)
 validation_set = Subset(dataset, val_idx)
 test_set = Subset(dataset, test_idx)
 
-with open("../data/{}/train_val_test_graphs/training_graph.pickle".format(dataset_name), 'wb') as f:
+app = ["","bigcn_"][is_bigcn]
+
+with open(project_folder+"/data/graph/"+dataset_name+"/train_val_test_graphs/"+app+"training_graph.pickle", 'wb') as f:
     pickle.dump(training_set, f)
 
-with open("../data/{}/train_val_test_graphs/train_idx.pickle".format(dataset_name), 'wb') as f:
+with open(project_folder+"/data/graph/"+dataset_name+"/train_val_test_graphs/"+app+"train_idx.pickle", 'wb') as f:
     pickle.dump(train_idx, f)
 
-with open("../data/{}/train_val_test_graphs/validation_graph.pickle".format(dataset_name), 'wb') as f:
+with open(project_folder+"/data/graph/"+dataset_name+"/train_val_test_graphs/"+app+"validation_graph.pickle", 'wb') as f:
     pickle.dump(validation_set, f)
 
-with open("../data/{}/train_val_test_graphs/val_idx.pickle".format(dataset_name), 'wb') as f:
+with open(project_folder+"/data/graph/"+dataset_name+"/train_val_test_graphs/"+app+"val_idx.pickle", 'wb') as f:
     pickle.dump(val_idx, f)
 
-with open("../data/{}/train_val_test_graphs/test_graph.pickle".format(dataset_name), 'wb') as f:
+with open(project_folder+"/data/graph/"+dataset_name+"/train_val_test_graphs/"+app+"test_graph.pickle", 'wb') as f:
     pickle.dump(test_set, f)
 
-with open("../data/{}/train_val_test_graphs/test_idx.pickle".format(dataset_name), 'wb') as f:
+with open(project_folder+"/data/graph/"+dataset_name+"/train_val_test_graphs/"+app+"test_idx.pickle", 'wb') as f:
     pickle.dump(test_idx, f)
 
-'''
 
+'''
 split_ratio = [0.60, 0.10, 0.20]
 
 num_training = int(len(dataset) * split_ratio[0])
@@ -94,3 +98,4 @@ for graph in train_loader:
     print(graph.y)
     print(type(graph))
     break
+'''
