@@ -52,7 +52,7 @@ def run_single_config(cfg):
     cfg.nhid = 128
     cfg.concat = True
     cfg.workers_available = 4
-    cfg.gpus_available = [2] #0,1,2,3,5,6,7
+    cfg.gpus_available = [7] #0,1,2,3,5,6,7
     cfg.num_classes = 2 
     cfg.nb_samples = 1
     cfg.loss_weights_val = torch.tensor([1.2791, 1.0000]).to('cuda:{}'.format(cfg.gpus_available[0]))
@@ -93,9 +93,9 @@ def run_single_config(cfg):
     #     pkl.dump(experiments_list, f)
 
 if __name__ == "__main__":
-    for dataset in ["politifact"]: #"politifact"
-        for model in ['bigcn']: #'bigcn', 'gcn', 'gat', 'sage' 'gcnfn'
-            for AL in ['deep-discriminator', 'uncertainty-margin', 'random']:
+    for dataset in ['condor']:
+        for model in ['gcnfn']: #'gcnfn', 'bigcn', 'gcn', 'gat', 'sage'
+            for AL in ['deep-discriminator']:  #'deep-discriminator', 'uncertainty-margin', 'random'
                 cfg = {
                     'dataset': dataset,
                     'model': model,
