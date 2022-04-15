@@ -25,6 +25,7 @@ def load_graph_data(data_folder, model_name):
         filename = data_split_name+"_graph.pickle"
         if model_name=="bigcn":
             filename = "bigcn_" + filename
+        filename = "prova_"+filename
             
         with open(os.path.join(divided_data_folder,filename),"rb") as input_file:
             app.append(pkl.load(input_file))
