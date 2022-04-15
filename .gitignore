@@ -146,3 +146,4 @@ dmypy.json
 
 #logs
 out/out/training_logs
+out/training_logs
