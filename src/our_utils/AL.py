@@ -47,9 +47,9 @@ def merge_new_data(current_loaders,
             if AL_parameters.AL_method == "random" or AL_iteration < iteration_of_random_warm_start:
                 print("AL: RANDOM")
                 new_ids = AL_random(take_until)
-            elif AL_parameters.AL_method == "uncertainty-margin":
+            elif "uncertainty-margin" in AL_parameters.AL_method:
                 print("AL: UNCERTAINTY-MARGIN")
-                new_ids = AL_uncertainty_margin(new_data, take_until, model, trainer, workers_available, batch_size)
+                new_ids = AL_uncertainty_margin(new_data, take_until, model, trainer, workers_available, batch_size, 'diversity' in AL_parameters.AL_method)
             elif AL_parameters.AL_method == "diversity-cluster":
                 print("AL: DIVERSITY-CLUSTER")
                 new_ids = AL_diversity_cluster(get_graph_embeddings_mean(new_data), take_until)
@@ -182,7 +182,7 @@ def AL_random(take_until):
     app = np.array(range(take_until))
     return app
 
-def AL_uncertainty_margin(new_x, take_until, model, trainer, workers_available, batch_size):
+def AL_uncertainty_margin(new_x, take_until, model, trainer, workers_available, batch_size, use_diversity):
     model_input = DataLoader(new_x, batch_size=batch_size, num_workers=workers_available)
 
     predictions = trainer.predict(model, model_input)#[0]
@@ -192,11 +192,18 @@ def AL_uncertainty_margin(new_x, take_until, model, trainer, workers_available, 
     pred_y = np.exp(predictions[:,1]).numpy()
 
     from_most_uncertain_ids = np.argsort(np.abs(pred_y-0.5))
-    most_uncertain_ids = from_most_uncertain_ids[:take_until]
+    
+    if use_diversity:
+        most_uncertain_ids = from_most_uncertain_ids[:(take_until*10)]
+        
+        selected_ids = AL_diversity_cluster(get_graph_embeddings_mean(torch.utils.data.Subset(new_x, most_uncertain_ids)), take_until)
+        selected_ids = most_uncertain_ids[selected_ids]
+    else:
+        selected_ids = from_most_uncertain_ids[:take_until]
 
     del model_input
 
-    return most_uncertain_ids
+    return selected_ids
 
 def AL_diversity_cluster(x, take_until):
     num_clusters = take_until #at least 1
