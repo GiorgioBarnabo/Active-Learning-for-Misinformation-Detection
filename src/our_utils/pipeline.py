@@ -10,8 +10,7 @@ from . import graph_model
 from . import gnn_base_models
 import wandb
 import psutil
-
-
+import time
 
 from torch_geometric.loader import DataLoader, DataListLoader
 sys.path.append("..")
@@ -136,15 +135,17 @@ class Pipeline():
                 del current_loaders["train"]
             
                 labels = []
+                train_ids = []
 
                 for graph in current_data["train"]:
                     labels.append(graph.y)
+                    train_ids.append(graph.graph_id)
 
                 counts = torch.bincount(torch.tensor(labels))
 
                 loss_weights = max(counts)/counts
-                loss_weights = loss_weights.to('cuda:{}'.format(self.cfg.gpus_available[0]))
-
+                loss_weights = loss_weights.to('cuda:{}'.format(self.cfg.gpus_available[0]))    
+               
                 current_loaders["train"] = None
 
                 print("CHANGE CURRENT DATALOADER")
@@ -165,7 +166,10 @@ class Pipeline():
                 self.cfg.new_positives = new_positives
                 self.cfg.new_negatives = new_negatives
                 self.cfg.loss_weights = loss_weights
+                self.cfg.training_ids = train_ids
     
+                #wandb.log("training_ids", train_ids)
+
                 del model
                 del self.trainer
                 
@@ -182,6 +186,12 @@ class Pipeline():
                 print("COMPUTE TEST METRICS")
 
                 self.trainer.test(model, current_loaders["test"], ckpt_path="best")
+
+                #self.cfg.misclassified_urls = model.misclassified_urls
+
+                #wandb.log("misclassified_urls", model.misclassified_urls)
+               
+                self.trainer.logger.experiment.log({"misclassified_urls": model.misclassified_urls})
 
                 done_keys = starting_key_id, current_key_id
         

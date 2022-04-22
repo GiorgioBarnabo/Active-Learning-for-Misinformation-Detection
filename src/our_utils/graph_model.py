@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from . import gnn_base_models
 import os
+from itertools import compress
 project_folder = os.path.join('..')
 
 import os
@@ -80,6 +81,8 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         self.val_AUC = torchmetrics.AUROC()
         self.test_AUC = torchmetrics.AUROC()
 
+        self.misclassified_urls = []
+
     def training_step(self, data, batch_idx):
         #print("TRAIN STEP") 
         
@@ -136,11 +139,16 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         
         x = self.model(data)
         y = data.y
+        urls_tested = data.graph_id
         test_loss = F.nll_loss(x, y)
         
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]
+        
+        fil = y != outputs
 
+        self.misclassified_urls += list(compress(urls_tested, fil))
+        
         self.test_acc(y, outputs)
         self.test_f1_score_micro(y, outputs)
         self.test_f1_score_macro(y, outputs)
@@ -166,11 +174,11 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
             return hook
 
         if self.cfg.model in ['gcn', 'gat', 'sage']:
-            layer = self.model.lin0
+            layer = self.model.lin1
         elif self.cfg.model == 'gcnfn':
-            layer = self.model.fc0
+            layer = self.model.fc1
         elif self.cfg.model == 'bigcn':
-            layer = self.model.TDrumorGCN
+            layer = self.model.BUrumorGCN
 
         h = layer.register_forward_hook(getActivation('embedding'))
 

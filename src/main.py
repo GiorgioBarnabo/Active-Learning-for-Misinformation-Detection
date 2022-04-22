@@ -39,20 +39,21 @@ def run_single_config(cfg):
     cfg.training_years = [2005,2021]
     cfg.batch_size = 32
     cfg.iteration_of_random_warm_start = 5
-    cfg.number_AL_iteration = 30
-    cfg.tot_num_checked_urls = 300
+    cfg.number_AL_iteration = 100 #100
+    cfg.tot_num_checked_urls = 1000 #1000
     cfg.retrain_from_scratch = True
     cfg.train_last_samples = np.inf
     cfg.val_last_samples = np.inf
     cfg.add_val_to_train  = False
-    
+
+    cfg.experiment_batch  = 1
     cfg.epochs = 100
     cfg.lr = 0.001
     cfg.weight_decay = 0.01
     cfg.nhid = 128
     cfg.concat = True
     cfg.workers_available = 4
-    cfg.gpus_available = [7] #0,1,2,3,5,6,7
+    cfg.gpus_available = [2] #0,1,2,3,5,6,7
     cfg.num_classes = 2 
     cfg.nb_samples = 1
     cfg.loss_weights_val = torch.tensor([1.2791, 1.0000]).to('cuda:{}'.format(cfg.gpus_available[0]))
@@ -95,7 +96,7 @@ def run_single_config(cfg):
 if __name__ == "__main__":
     for dataset in ['condor']:
         for model in ['gcnfn']: #'gcnfn', 'bigcn', 'gcn', 'gat', 'sage'
-            for AL in ['deep-discriminator']:  #'deep-discriminator', 'uncertainty-margin', 'random'
+            for AL in ['deep-discriminator', 'uncertainty-margin', 'random']:  #'deep-discriminator', 'uncertainty-margin', 'random'
                 cfg = {
                     'dataset': dataset,
                     'model': model,
