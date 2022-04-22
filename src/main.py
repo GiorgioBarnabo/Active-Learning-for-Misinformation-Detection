@@ -95,8 +95,8 @@ def run_single_config(cfg):
 
 if __name__ == "__main__":
     for dataset in ['condor']:
-        for model in ['gcnfn']: #'gcnfn', 'bigcn', 'gcn', 'gat', 'sage'
-            for AL in ['deep-discriminator', 'uncertainty-margin', 'random']:  #'deep-discriminator', 'uncertainty-margin', 'random'
+        for model in ['gcn']: #'gcnfn', 'bigcn', 'gcn', 'gat', 'sage'
+            for AL in ['deep-discriminator+diversity','diversity-cluster','deep-adversarial+diversity','deep-adversarial','deep-discriminator+diversity','deep-discriminator', 'uncertainty-margin', 'random']:  #'deep-discriminator', 'uncertainty-margin', 'random'
                 cfg = {
                     'dataset': dataset,
                     'model': model,
