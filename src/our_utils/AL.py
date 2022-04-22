@@ -368,7 +368,6 @@ def get_graph_embeddings_mean(data):
     for dat in data:
         ls.append(dat.x.mean(dim=0))
     app = torch.stack(ls).cpu().detach().numpy()
-    print(app.shape)
     return app
 
 
