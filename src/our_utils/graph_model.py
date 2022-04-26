@@ -27,12 +27,12 @@ def initialize_graph_model(cfg):
         save_dir = os.path.join(project_folder,"out","training_logs","wandb"),
     )
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=15)  #validation_f1_score_macro / validation_loss
+    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", patience=10)  #validation_f1_score_macro / validation_loss
     
     checkpointing = pl.callbacks.ModelCheckpoint(
-        monitor="validation_loss",
+        monitor="validation_f1_score_macro",
         dirpath=os.path.join(project_folder,"out","models"),
-        mode='min'
+        mode='max'
     )
     
     trainer = pl.Trainer(
@@ -116,7 +116,7 @@ class GNN_Misinfo_Classifier(pl.LightningModule):
         
         x = self.model(data)
         y = data.y
-        validation_loss = F.nll_loss(x, y, weight=self.cfg.loss_weights_val)
+        validation_loss = F.nll_loss(x, y) #weight=self.cfg.loss_weights_val
 
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]
@@ -293,7 +293,7 @@ class MultiLabelClassifier(pl.LightningModule):
     def validation_step(self, data, batch_idx):
         x = self.model(data[0])
         y = data[1]#.long()
-        validation_loss = F.nll_loss(x, y, weight=self.cfg.deep_al_weights)
+        validation_loss = F.nll_loss(x, y) #weight=self.cfg.deep_al_weights
 
         outputs = x.argmax(axis=1)
         outputs_probs = torch.exp(x)[:, 1]

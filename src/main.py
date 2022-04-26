@@ -37,7 +37,7 @@ def run_single_config(cfg):
 
     cfg.warm_start_years = [np.inf, np.inf]
     cfg.training_years = [2005,2021]
-    cfg.batch_size = 32
+    cfg.batch_size = 64
     cfg.iteration_of_random_warm_start = 5
     cfg.number_AL_iteration = 100 #100
     cfg.tot_num_checked_urls = 1000 #1000
@@ -46,14 +46,14 @@ def run_single_config(cfg):
     cfg.val_last_samples = np.inf
     cfg.add_val_to_train  = False
 
-    cfg.experiment_batch  = 1
+    cfg.experiment_batch = 2
     cfg.epochs = 100
     cfg.lr = 0.001
     cfg.weight_decay = 0.01
     cfg.nhid = 128
     cfg.concat = True
     cfg.workers_available = 4
-    cfg.gpus_available = [7] #1, 3, 5, 6, 7
+    cfg.gpus_available = [1] #1, 3, 5, 6, 7
     cfg.num_classes = 2 
     cfg.nb_samples = 1
     cfg.loss_weights_val = torch.tensor([1.2791, 1.0000]).to('cuda:{}'.format(cfg.gpus_available[0]))
@@ -100,12 +100,12 @@ def run_single_config(cfg):
 
 if __name__ == "__main__":
     for dataset in ['condor']:
-        for model in ['gat', 'sage', 'gcn', 'gcnfn']: #'gcnfn', 'bigcn', 'gcn', 'gat', 'sage'
-            for AL in ['uncertainty-margin+diversity',
-                       'deep-adversarial+diversity',
-                       'deep-discriminator+diversity',
+        for model in ['gcnfn', 'sage']: #'gcnfn', 'bigcn', 'gcn', 'gat', 'sage'
+            for AL in ['deep-discriminator',
                        'deep-adversarial',
-                       'diversity-cluster']:  #'deep-discriminator', 'uncertainty-margin', 'random'
+                       'uncertainty-margin+diversity',
+                       'deep-adversarial+diversity',
+                       'deep-discriminator+diversity']:  #'deep-adversarial+diversity', 'deep-discriminator+diversity', 'deep-adversarial', 'deep-discriminator', 'uncertainty-margin', 'random', 'diversity-cluster'
                 cfg = {
                     'dataset': dataset,
                     'model': model,

@@ -164,13 +164,19 @@ def AL_uncertainty_margin(new_x, take_until, model, trainer, workers_available, 
 
     pred_y = np.exp(predictions[:,1]).numpy()
 
+    uncertainty_scores = np.abs(pred_y-0.5)
+
     from_most_uncertain_ids = np.argsort(np.abs(pred_y-0.5))
     
     if use_diversity:
         most_uncertain_ids = from_most_uncertain_ids[:(take_until*10)]
-        
+
+        uncertainty_scores = uncertainty_scores[most_uncertain_ids]
+
         selected_ids = AL_diversity_cluster(get_graph_embeddings_mean(
-            torch.utils.data.Subset(new_x, most_uncertain_ids)), take_until)
+            torch.utils.data.Subset(new_x, most_uncertain_ids)), 
+            take_until, uncertainty_scores)
+        
         selected_ids = most_uncertain_ids[selected_ids]
     else:
         selected_ids = from_most_uncertain_ids[:take_until]
@@ -179,21 +185,34 @@ def AL_uncertainty_margin(new_x, take_until, model, trainer, workers_available, 
 
     return selected_ids
 
-def AL_diversity_cluster(x, take_until):
+def AL_diversity_cluster(x, take_until, uncertainty_scores):
+    
     num_clusters = take_until #at least 1
+
+    length = np.sqrt((x**2).sum(axis=1))[:, None]
+    
+    x = x / length
 
     cluster_result = KMeans(n_clusters = num_clusters, random_state=0).fit(x)
 
-    cluster_centers = cluster_result.cluster_centers_
-
     centroids_ids = []
     for i in range(num_clusters):
-        idx_cluster_i = np.where(cluster_result.labels_==i)[0]
         
-        cos_sims = cosine_similarity(x[idx_cluster_i],cluster_centers[i:(i+1)])[:,0]
-        sorted_idx = np.argsort(cos_sims)
+        idx_cluster_i = np.where(cluster_result.labels_==i)[0]
+
+        cluster_uncertainty_scores = uncertainty_scores[idx_cluster_i]
+
+        most_uncertain_url_in_the_cluster = np.argsort(cluster_uncertainty_scores)[0]
+
+        url_to_add_from_i = idx_cluster_i[most_uncertain_url_in_the_cluster]
+
+        #cos_sims = cosine_similarity(x[idx_cluster_i],cluster_centers[i:(i+1)])[:,0]
+        #sorted_idx = np.argsort(cos_sims)
     
-        centroids_ids.append(sorted_idx[0])
+        centroids_ids.append(url_to_add_from_i)
+
+    
+    print("DIVERSITY SAMPLING CENTROIDS", centroids_ids)
         
     return centroids_ids
 
@@ -226,8 +245,8 @@ def AL_deep_discriminator(current_val_loader, new_x, take_until, model, use_dive
                           batch_size=model.cfg.batch_size, shuffle=False, 
                           num_workers=model.cfg.workers_available, pin_memory=True)
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=5) #validation_f1_score_macro / validation_loss
-    checkpointing = pl.callbacks.ModelCheckpoint(monitor="validation_loss", mode='min')
+    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", patience=10) #validation_f1_score_macro / validation_loss
+    checkpointing = pl.callbacks.ModelCheckpoint(monitor="validation_f1_score_macro", mode='max')
 
     trainer = pl.Trainer(
         gpus=model.cfg.gpus_available,
@@ -257,11 +276,18 @@ def AL_deep_discriminator(current_val_loader, new_x, take_until, model, use_dive
 
     predictions = np.exp(predictions[:, 1]).numpy()
 
-    from_most_error_ids = np.argsort(-predictions)
+    uncertainty_scores = -predictions
+    
+    from_most_error_ids = np.argsort(uncertainty_scores)
+
     if use_diversity:
         most_error_ids = from_most_error_ids[:(take_until*10)]
         
-        selected_ids = AL_diversity_cluster(get_graph_embeddings_mean(torch.utils.data.Subset(new_x, most_error_ids)), take_until)
+        uncertainty_scores = uncertainty_scores[most_error_ids]
+        
+        selected_ids = AL_diversity_cluster(get_graph_embeddings_mean(
+                                            torch.utils.data.Subset(new_x, most_error_ids)), 
+                                            take_until, uncertainty_scores)
         selected_ids = most_error_ids[selected_ids]
     else:
         selected_ids = from_most_error_ids[:take_until]
@@ -303,8 +329,8 @@ def AL_deep_adversarial(current_train_loader, current_val_loader, new_x, take_un
                           batch_size=model.cfg.batch_size, shuffle=False, 
                           num_workers=model.cfg.workers_available, pin_memory=True)
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=5) #validation_f1_score_macro / validation_loss
-    checkpointing = pl.callbacks.ModelCheckpoint(monitor="validation_loss", mode='min')
+    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", patience=10) #validation_f1_score_macro / validation_loss
+    checkpointing = pl.callbacks.ModelCheckpoint(monitor="validation_f1_score_macro", mode='max')
 
     trainer = pl.Trainer(
         gpus=model.cfg.gpus_available,
@@ -334,11 +360,18 @@ def AL_deep_adversarial(current_train_loader, current_val_loader, new_x, take_un
 
     predictions = np.exp(predictions[:, 1]).numpy()
 
-    from_most_error_ids = np.argsort(-predictions)
+    uncertainty_scores = -predictions
+
+    from_most_error_ids = np.argsort(uncertainty_scores)
+    
     if use_diversity:
         most_error_ids = from_most_error_ids[:(take_until*10)]
+
+        uncertainty_scores = uncertainty_scores[most_error_ids]
         
-        selected_ids = AL_diversity_cluster(get_graph_embeddings_mean(torch.utils.data.Subset(new_x, most_error_ids)), take_until)
+        selected_ids = AL_diversity_cluster(get_graph_embeddings_mean(
+                                            torch.utils.data.Subset(new_x, most_error_ids)), 
+                                            take_until, uncertainty_scores)
         selected_ids = most_error_ids[selected_ids]
     else:
         selected_ids = from_most_error_ids[:take_until]
@@ -349,6 +382,6 @@ def AL_deep_adversarial(current_train_loader, current_val_loader, new_x, take_un
 def get_graph_embeddings_mean(data):
     ls = []
     for dat in data:
-        ls.append(dat.x.mean(dim=0))
+        ls.append(dat.x.mean(dim=0))  #FEDE: maybe here we could take just the first embedding (news title)
     app = torch.stack(ls).cpu().detach().numpy()
     return app
