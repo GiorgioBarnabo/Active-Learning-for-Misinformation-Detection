@@ -92,8 +92,12 @@ class Pipeline():
                             "test": all_test_data[list(all_test_data.keys())[0]]}
 
             current_loaders = {"train": None,
-                                "val": DataLoader(all_val_data[list(all_val_data.keys())[0]],batch_size=self.cfg.batch_size, shuffle=False, num_workers=self.cfg.workers_available, pin_memory=True),
-                                "test": DataLoader(all_test_data[list(all_test_data.keys())[0]],batch_size=self.cfg.batch_size, shuffle=False, num_workers=self.cfg.workers_available, pin_memory=True)}
+                                "val": DataLoader(all_val_data[list(all_val_data.keys())[0]],
+                                                  batch_size=self.cfg.batch_size, shuffle=False, 
+                                                  num_workers=self.cfg.workers_available, pin_memory=True),
+                                "test": DataLoader(all_test_data[list(all_test_data.keys())[0]],
+                                                   batch_size=self.cfg.batch_size, shuffle=False, 
+                                                   num_workers=self.cfg.workers_available, pin_memory=True)}
             
             #Initialize model
             print("INITIALIZING MODEL")
@@ -149,7 +153,9 @@ class Pipeline():
                 current_loaders["train"] = None
 
                 print("CHANGE CURRENT DATALOADER")
-                current_loaders["train"] = DataLoader(current_data["train"],batch_size=self.cfg.batch_size, shuffle=True, num_workers=self.cfg.workers_available, pin_memory=True)
+                current_loaders["train"] = DataLoader(current_data["train"],
+                                                      batch_size=self.cfg.batch_size, shuffle=True, 
+                                                      num_workers=self.cfg.workers_available, pin_memory=True)
 
                 print("FINISH GETTING NEW TRAINING DATA")
                 print("data['train'].shape, ", len(current_data['train']))

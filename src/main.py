@@ -53,7 +53,7 @@ def run_single_config(cfg):
     cfg.nhid = 128
     cfg.concat = True
     cfg.workers_available = 4
-    cfg.gpus_available = [2] #0,1,2,3,5,6,7
+    cfg.gpus_available = [7] #1, 3, 5, 6, 7
     cfg.num_classes = 2 
     cfg.nb_samples = 1
     cfg.loss_weights_val = torch.tensor([1.2791, 1.0000]).to('cuda:{}'.format(cfg.gpus_available[0]))
@@ -93,10 +93,19 @@ def run_single_config(cfg):
     # with open(experiments_list_file, "wb") as f:
     #     pkl.dump(experiments_list, f)
 
+# 'gat', 'sage', 'gcn', 'gcnfn'
+# 'sage', 'gcn', 'gcnfn', 'gat'
+# 'gcn', 'gcnfn', 'gat', 'sage'
+# 'gcnfn', 'gat', 'sage', 'gcn'
+
 if __name__ == "__main__":
     for dataset in ['condor']:
-        for model in ['gcn']: #'gcnfn', 'bigcn', 'gcn', 'gat', 'sage'
-            for AL in ['uncertainty-margin+diversity','deep-discriminator+diversity','diversity-cluster','deep-adversarial+diversity','deep-adversarial','deep-discriminator+diversity','deep-discriminator', 'uncertainty-margin', 'random']:  #'deep-discriminator', 'uncertainty-margin', 'random'
+        for model in ['gat', 'sage', 'gcn', 'gcnfn']: #'gcnfn', 'bigcn', 'gcn', 'gat', 'sage'
+            for AL in ['uncertainty-margin+diversity',
+                       'deep-adversarial+diversity',
+                       'deep-discriminator+diversity',
+                       'deep-adversarial',
+                       'diversity-cluster']:  #'deep-discriminator', 'uncertainty-margin', 'random'
                 cfg = {
                     'dataset': dataset,
                     'model': model,
