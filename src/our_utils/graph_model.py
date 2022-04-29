@@ -27,7 +27,8 @@ def initialize_graph_model(cfg):
         save_dir = os.path.join(project_folder,"out","training_logs","wandb"),
     )
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", patience=10)  #validation_f1_score_macro / validation_loss
+    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", 
+                                    patience=7, mode='max')  #validation_f1_score_macro / validation_loss
     
     checkpointing = pl.callbacks.ModelCheckpoint(
         monitor="validation_f1_score_macro",
@@ -44,7 +45,7 @@ def initialize_graph_model(cfg):
         logger=wandb_logger,
         callbacks=[es, checkpointing],
         stochastic_weight_avg=True,
-        accumulate_grad_batches=2,
+        #accumulate_grad_batches=2,
         precision=16,
     )
 
@@ -234,7 +235,7 @@ class CoreNet(nn.Module):
             layers.append(nn.Linear(input_dim, output_dim))
             layers.append(nn.BatchNorm1d(output_dim)),
             layers.append(nn.ReLU())
-            layers.append(nn.Dropout(0.2))
+            #layers.append(nn.Dropout(0.2))
             input_dim = output_dim
 
         layers.append(nn.Linear(input_dim, 2))

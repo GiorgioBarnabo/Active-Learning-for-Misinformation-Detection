@@ -98,13 +98,20 @@ def run_single_config(cfg):
 # 'gcn', 'gcnfn', 'gat', 'sage'
 # 'gcnfn', 'gat', 'sage', 'gcn'
 
+# 'uncertainty-margin',
+# 'uncertainty-margin+diversity',
+# 'random'
+
+# 'deep-discriminator',
+# 'deep-discriminator+diversity',
+
+# 'deep-adversarial',
+# 'deep-adversarial+diversity',
+
 if __name__ == "__main__":
     for dataset in ['condor']:
-        for model in ['gcnfn', 'sage']: #'gcnfn', 'bigcn', 'gcn', 'gat', 'sage'
+        for model in ['gat', 'sage', 'gcn', 'gcnfn']: #'gcnfn', 'bigcn', 'gcn', 'gat', 'sage'
             for AL in ['deep-discriminator',
-                       'deep-adversarial',
-                       'uncertainty-margin+diversity',
-                       'deep-adversarial+diversity',
                        'deep-discriminator+diversity']:  #'deep-adversarial+diversity', 'deep-discriminator+diversity', 'deep-adversarial', 'deep-discriminator', 'uncertainty-margin', 'random', 'diversity-cluster'
                 cfg = {
                     'dataset': dataset,

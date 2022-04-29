@@ -182,6 +182,7 @@ def AL_uncertainty_margin(new_x, take_until, model, trainer, workers_available, 
         selected_ids = from_most_uncertain_ids[:take_until]
 
     del model_input
+    del predictions
 
     return selected_ids
 
@@ -245,7 +246,7 @@ def AL_deep_discriminator(current_val_loader, new_x, take_until, model, use_dive
                           batch_size=model.cfg.batch_size, shuffle=False, 
                           num_workers=model.cfg.workers_available, pin_memory=True)
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", patience=10) #validation_f1_score_macro / validation_loss
+    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", patience=7, mode='max') #validation_f1_score_macro / validation_loss
     checkpointing = pl.callbacks.ModelCheckpoint(monitor="validation_f1_score_macro", mode='max')
 
     trainer = pl.Trainer(
@@ -255,7 +256,7 @@ def AL_deep_discriminator(current_val_loader, new_x, take_until, model, use_dive
         #logger=wandb_logger,
         callbacks=[es, checkpointing],
         stochastic_weight_avg=True,
-        accumulate_grad_batches=2,
+        #accumulate_grad_batches=2,
         precision=16,
     )
     trainer.fit(discriminator_model, train_data, val_data)
@@ -292,6 +293,9 @@ def AL_deep_discriminator(current_val_loader, new_x, take_until, model, use_dive
     else:
         selected_ids = from_most_error_ids[:take_until]
 
+    del discriminator_model
+    del trainer
+    
     return selected_ids
 
 def AL_deep_adversarial(current_train_loader, current_val_loader, new_x, take_until, model, use_diversity):
@@ -329,7 +333,7 @@ def AL_deep_adversarial(current_train_loader, current_val_loader, new_x, take_un
                           batch_size=model.cfg.batch_size, shuffle=False, 
                           num_workers=model.cfg.workers_available, pin_memory=True)
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", patience=10) #validation_f1_score_macro / validation_loss
+    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", patience=7, mode='max') #validation_f1_score_macro / validation_loss
     checkpointing = pl.callbacks.ModelCheckpoint(monitor="validation_f1_score_macro", mode='max')
 
     trainer = pl.Trainer(
@@ -339,7 +343,7 @@ def AL_deep_adversarial(current_train_loader, current_val_loader, new_x, take_un
         #logger=wandb_logger,
         callbacks=[es, checkpointing],
         stochastic_weight_avg=True,
-        accumulate_grad_batches=2,
+        #accumulate_grad_batches=2,
         precision=16,
     )
     trainer.fit(discriminator_model, train_data, val_data)
@@ -376,12 +380,18 @@ def AL_deep_adversarial(current_train_loader, current_val_loader, new_x, take_un
     else:
         selected_ids = from_most_error_ids[:take_until]
 
+    del discriminator_model
+    del trainer
+    
     return selected_ids
-
 
 def get_graph_embeddings_mean(data):
     ls = []
+    i = 0
     for dat in data:
-        ls.append(dat.x.mean(dim=0))  #FEDE: maybe here we could take just the first embedding (news title)
+        ls.append(dat.x.mean(dim=0))
+        i += 1
+        if i > 4:
+            break  #FEDE: maybe here we could take just the first embedding (news title)
     app = torch.stack(ls).cpu().detach().numpy()
     return app
