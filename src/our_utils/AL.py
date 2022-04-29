@@ -369,7 +369,7 @@ def AL_deep_adversarial(current_train_loader, current_val_loader, new_x, take_un
     from_most_error_ids = np.argsort(uncertainty_scores)
     
     if use_diversity:
-        most_error_ids = from_most_error_ids[:(take_until*10)]
+        most_error_ids = from_most_error_ids[:(take_until*3)]
 
         uncertainty_scores = uncertainty_scores[most_error_ids]
         
