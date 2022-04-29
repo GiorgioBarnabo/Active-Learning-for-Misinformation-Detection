@@ -38,7 +38,7 @@ def run_single_config(cfg):
     cfg.warm_start_years = [np.inf, np.inf]
     cfg.training_years = [2005,2021]
     cfg.batch_size = 64
-    cfg.iteration_of_random_warm_start = 0
+    cfg.iteration_of_random_warm_start = 5
     cfg.number_AL_iteration = 100 #100
     cfg.tot_num_checked_urls = 1000 #1000
     cfg.retrain_from_scratch = True
@@ -47,7 +47,7 @@ def run_single_config(cfg):
     cfg.add_val_to_train  = False
 
     cfg.experiment_batch = 2
-    cfg.epochs = 1
+    cfg.epochs = 100
     cfg.lr = 0.001
     cfg.weight_decay = 0.01
     cfg.nhid = 128
