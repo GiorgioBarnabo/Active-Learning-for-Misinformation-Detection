@@ -38,7 +38,7 @@ def run_single_config(cfg):
     cfg.warm_start_years = [np.inf, np.inf]
     cfg.training_years = [2005,2021]
     cfg.batch_size = 64
-    cfg.iteration_of_random_warm_start = 5
+    cfg.iteration_of_random_warm_start = 0
     cfg.number_AL_iteration = 100 #100
     cfg.tot_num_checked_urls = 1000 #1000
     cfg.retrain_from_scratch = True
@@ -47,7 +47,7 @@ def run_single_config(cfg):
     cfg.add_val_to_train  = False
 
     cfg.experiment_batch = 2
-    cfg.epochs = 100
+    cfg.epochs = 1
     cfg.lr = 0.001
     cfg.weight_decay = 0.01
     cfg.nhid = 128
@@ -111,8 +111,7 @@ def run_single_config(cfg):
 if __name__ == "__main__":
     for dataset in ['condor']:
         for model in ['gat', 'sage', 'gcn', 'gcnfn']: #'gcnfn', 'bigcn', 'gcn', 'gat', 'sage'
-            for AL in ['deep-discriminator',
-                       'deep-discriminator+diversity']:  #'deep-adversarial+diversity', 'deep-discriminator+diversity', 'deep-adversarial', 'deep-discriminator', 'uncertainty-margin', 'random', 'diversity-cluster'
+            for AL in ['deep-discriminator uncertainty-margin random']:  #'deep-adversarial+diversity', 'deep-discriminator+diversity', 'deep-adversarial', 'deep-discriminator', 'uncertainty-margin', 'random', 'diversity-cluster'
                 cfg = {
                     'dataset': dataset,
                     'model': model,

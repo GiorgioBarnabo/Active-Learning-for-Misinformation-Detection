@@ -12,6 +12,8 @@ from torch_geometric.data import DataLoader
 from torch.utils.data import ConcatDataset, TensorDataset #,DataLoader
 import pytorch_lightning as pl
 
+from collections import Counter
+
 from . import graph_model
 
 def keep_sum_vec(vec, sm):
@@ -44,71 +46,22 @@ def merge_new_data(current_loaders,
         else:
             take_until = min(len(new_data),AL_parameters.num_urls_k)
 
-            if AL_parameters.AL_method == "random" or AL_iteration < iteration_of_random_warm_start:
-                print("AL: RANDOM")
-                new_ids = AL_random(take_until)
-            elif "uncertainty-margin" in AL_parameters.AL_method:
-                print("AL: UNCERTAINTY-MARGIN")
-                new_ids = AL_uncertainty_margin(new_data, take_until, 
-                                                model, trainer, 
-                                                workers_available, 
-                                                batch_size, 'diversity' in AL_parameters.AL_method)
-            elif AL_parameters.AL_method == "diversity-cluster":
-                print("AL: DIVERSITY-CLUSTER")
-                new_ids = AL_diversity_cluster(get_graph_embeddings_mean(new_data), take_until)
-            elif "deep-discriminator" in AL_parameters.AL_method:
-                print("AL: deep-discriminator")
-                if current_loaders['val'] is not None:
-                    new_ids = AL_deep_discriminator(current_loaders['val'], 
-                                                    new_data, take_until, 
-                                                    model, 'diversity' in AL_parameters.AL_method)
-                else:
-                    new_ids = AL_random(take_until)
-            elif "deep-adversarial" in AL_parameters.AL_method:
-                print("AL: deep-adversarial")
-                if current_loaders['val'] is not None:
-                    new_ids = AL_deep_adversarial(current_loaders['train'], 
-                                                  current_loaders['val'], 
-                                                  new_data, take_until, model, 'diversity' in AL_parameters.AL_method)
-                else:
-                    new_ids = AL_random(take_until)
-            elif AL_parameters.AL_method == "combined":
-                new_ids_divided = []
-                AL_nums_divided = []
-                if AL_parameters.combined_AL_nums[0]>0:
-                    new_ids_divided.append(AL_random(take_until))
-                    AL_nums_divided.append(AL_parameters.combined_AL_nums[0])
-                if AL_parameters.combined_AL_nums[1]>0:
-                    new_ids_divided.append(AL_uncertainty_margin(new_data, take_until, model))
-                    AL_nums_divided.append(AL_parameters.combined_AL_nums[1])
-                if AL_parameters.combined_AL_nums[2]>0:
-                    new_ids_divided.append(AL_diversity_cluster(new_data, take_until, AL_parameters.diversity_nums))
-                    AL_nums_divided.append(AL_parameters.combined_AL_nums[2])
-                
-                #print(new_ids_divided)
-
-                new_ids = {}
-                i = 0
-                i123 = [0 for _ in range(len(new_ids_divided))]
-                while len(new_ids)<take_until:
-                    poss = new_ids_divided[i][i123[i]:(i123[i]+AL_nums_divided[i])]
-                    new_ids.update(dict(zip(poss,[None]*len(poss))))
-
-                    i123[i] += AL_nums_divided[i]
-                    i = (i+1) % len(new_ids_divided)
-                    #print(new_ids.keys())
-
-                new_ids = np.array(list(new_ids.keys()))
-                #print(new_ids)
-                if len(new_ids)>take_until:
-                    new_ids = new_ids[:take_until]
-
-                if len(new_ids) != take_until:
-                    #print(np.sum(samples_per_AL))
-                    #print(take_until)
-                    print("!!!"*10," COMBINED NOT WORKING? ","!!!"*10)
+            AL_algs = AL_parameters.AL_method.split(" ")
+            ranks = []
+            for method_name in AL_algs:
+                new_ids = run_AL_method(current_loaders, new_data, take_until,
+                                        method_name, AL_iteration, iteration_of_random_warm_start,
+                                        model, trainer, workers_available, batch_size)
+                ranks.append(new_ids)
+            if len(ranks)==1:
+                new_ids = ranks[0]
             else:
-                print("NOT IMPLEMENTED YET")
+                combined_rank = Counter()
+                for ranking in ranks:
+                    combined_rank += Counter(dict(zip(ranking,1/np.array(range(1,len(ranking)+1)))))
+                combined_rank = dict(combined_rank)
+
+                new_ids = [k for k,v in sorted(combined_rank.items(), key=lambda item: item[1])][-take_until:]
 
     print("NEW IDS:",new_ids)
     rem_data = None
@@ -150,6 +103,45 @@ def split_by_ratio(new_x, new_y, train_val_test_split_ratio):
     new_y_valid = new_y[app:]
 
     return new_x_train,new_y_train,new_x_valid,new_y_valid
+
+def run_AL_method(current_loaders, new_data, take_until,
+                    method_name, AL_iteration, iteration_of_random_warm_start,
+                    model, trainer, workers_available, batch_size):
+    
+    if method_name == "random" or AL_iteration < iteration_of_random_warm_start:
+        print("AL: RANDOM")
+        new_ids = AL_random(take_until)
+    elif "uncertainty-margin" in method_name:
+        print("AL: UNCERTAINTY-MARGIN")
+        new_ids = AL_uncertainty_margin(new_data, take_until, 
+                                        model, trainer, 
+                                        workers_available, 
+                                        batch_size, 'diversity' in method_name)
+    elif method_name == "diversity-cluster":
+        print("AL: DIVERSITY-CLUSTER")
+        new_ids = AL_diversity_cluster(get_graph_embeddings_mean(new_data), take_until)
+    elif "deep-discriminator" in method_name:
+        print("AL: deep-discriminator")
+        if current_loaders['val'] is not None:
+            new_ids = AL_deep_discriminator(current_loaders['val'], 
+                                            new_data, take_until, 
+                                            model, 'diversity' in method_name)
+        else:
+            new_ids = AL_random(take_until)
+    elif "deep-adversarial" in method_name:
+        print("AL: deep-adversarial")
+        if current_loaders['val'] is not None:
+            new_ids = AL_deep_adversarial(current_loaders['train'], 
+                                            current_loaders['val'], 
+                                            new_data, take_until, model, 'diversity' in method_name)
+        else:
+            new_ids = AL_random(take_until)
+    else:
+        print("NOT IMPLEMENTED YET")
+    
+    print(new_ids)
+    return new_ids
+
 
 def AL_random(take_until):
     app = np.array(range(take_until))
