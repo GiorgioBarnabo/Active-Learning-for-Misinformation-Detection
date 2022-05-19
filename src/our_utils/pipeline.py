@@ -19,9 +19,9 @@ import pytorch_lightning as pl
 #from omegaconf import OmegaConf,open_dict
 
 class Pipeline():
-    def __init__(self, cfg, experiment_id):
+    def __init__(self, cfg):
         self.cfg = cfg
-        self.experiment_id = experiment_id
+        #self.experiment_id = experiment_id
 
     def prepare_pipeline(self):
         if "num_urls_k" not in self.cfg:   #FEDE_WHAT_TO_DO
@@ -32,10 +32,10 @@ class Pipeline():
                 print(error)
 
         #Set results folder
-        self.results_folder = os.path.join(project_folder, 'out', "results", str(self.experiment_id))#, self.cfg.experiment_params.results_set, self.cfg.data_params.dataname)
+        #self.results_folder = os.path.join(project_folder, 'out', "results", str(self.experiment_id))#, self.cfg.experiment_params.results_set, self.cfg.data_params.dataname)
         #create results_folder not exists
-        if not os.path.isdir(self.results_folder):
-            os.makedirs(self.results_folder)
+        # if not os.path.isdir(self.results_folder):
+        #     os.makedirs(self.results_folder)
 
         self.data_folder = os.path.join(project_folder, 'data', "graph", self.cfg.dataset)
 
@@ -83,8 +83,8 @@ class Pipeline():
                                     range(warm_start_ending_key_id, len(all_train_data)+1)))
         print("IT_RNG:",iteration_ranges)
             
-        results_filename = os.path.join(self.results_folder,"rs.npy")#os.path.join(results_folder, '_ALm_' + AL_method + '_k_' + str(num_urls_k) + '.npy')
-        all_pos_neg_filename = os.path.join(self.results_folder,"pos_neg.npy")   #FEDE_WHAT_TO_DO
+        #results_filename = os.path.join(self.results_folder,"rs.npy")#os.path.join(results_folder, '_ALm_' + AL_method + '_k_' + str(num_urls_k) + '.npy')
+        #all_pos_neg_filename = os.path.join(self.results_folder,"pos_neg.npy")   #FEDE_WHAT_TO_DO
         
         for sample in range(self.cfg.nb_samples): #FEDE_WHAT_TO_DO
             current_data = {"train": None,
@@ -105,7 +105,7 @@ class Pipeline():
             self.cfg.AL_iteration = -1
             #self.cfg.experiment_name = "{}_{}_{}_{}"
 
-            model, self.trainer = graph_model.initialize_graph_model(self.cfg)
+            model, self.trainer, wandb_logger = graph_model.initialize_graph_model(self.cfg)
 
             done_keys = (None,None)
             for iteration_num,(starting_key_id,current_key_id) in enumerate(iteration_ranges):              
@@ -134,7 +134,7 @@ class Pipeline():
                                                                                             self.cfg.AL_iteration,
                                                                                             self.cfg.iteration_of_random_warm_start)
 
-                wandb.finish()
+                wandb_logger.experiment.finish()
                 
                 del current_loaders["train"]
             
@@ -177,10 +177,11 @@ class Pipeline():
                 #wandb.log("training_ids", train_ids)
 
                 del model
+                del wandb_logger
                 del self.trainer
                 
-                if self.cfg.retrain_from_scratch: #Re-initialize model
-                    model, self.trainer = graph_model.initialize_graph_model(self.cfg)
+                if self.cfg.retrain_from_scratch or True: #Re-initialize model
+                    model, self.trainer, wandb_logger = graph_model.initialize_graph_model(self.cfg)
                 
                 print("OCCUPIED MEMORY")
 
@@ -197,7 +198,8 @@ class Pipeline():
 
                 #wandb.log("misclassified_urls", model.misclassified_urls)
                
-                self.trainer.logger.experiment.log({"misclassified_urls": model.misclassified_urls})
+                wandb_logger.experiment.log({"misclassified_urls": model.misclassified_urls})
 
                 done_keys = starting_key_id, current_key_id
         
+            wandb_logger.experiment.finish()

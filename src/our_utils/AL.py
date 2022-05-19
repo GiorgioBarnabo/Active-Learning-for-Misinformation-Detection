@@ -161,7 +161,7 @@ def AL_uncertainty_margin(new_x, take_until, model, trainer, workers_available, 
     from_most_uncertain_ids = np.argsort(np.abs(pred_y-0.5))
     
     if use_diversity:
-        most_uncertain_ids = from_most_uncertain_ids[:(take_until*10)]
+        most_uncertain_ids = from_most_uncertain_ids[:(take_until*3)]
 
         uncertainty_scores = uncertainty_scores[most_uncertain_ids]
 
@@ -238,8 +238,8 @@ def AL_deep_discriminator(current_val_loader, new_x, take_until, model, use_dive
                           batch_size=model.cfg.batch_size, shuffle=False, 
                           num_workers=model.cfg.workers_available, pin_memory=True)
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", patience=7, mode='max') #validation_f1_score_macro / validation_loss
-    checkpointing = pl.callbacks.ModelCheckpoint(monitor="validation_f1_score_macro", mode='max')
+    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=7, mode='min') #validation_f1_score_macro / validation_loss
+    checkpointing = pl.callbacks.ModelCheckpoint(monitor="validation_loss", mode='min')
 
     trainer = pl.Trainer(
         gpus=model.cfg.gpus_available,
@@ -274,7 +274,7 @@ def AL_deep_discriminator(current_val_loader, new_x, take_until, model, use_dive
     from_most_error_ids = np.argsort(uncertainty_scores)
 
     if use_diversity:
-        most_error_ids = from_most_error_ids[:(take_until*10)]
+        most_error_ids = from_most_error_ids[:(take_until*3)]
         
         uncertainty_scores = uncertainty_scores[most_error_ids]
         
@@ -325,8 +325,8 @@ def AL_deep_adversarial(current_train_loader, current_val_loader, new_x, take_un
                           batch_size=model.cfg.batch_size, shuffle=False, 
                           num_workers=model.cfg.workers_available, pin_memory=True)
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", patience=7, mode='max') #validation_f1_score_macro / validation_loss
-    checkpointing = pl.callbacks.ModelCheckpoint(monitor="validation_f1_score_macro", mode='max')
+    es = pl.callbacks.EarlyStopping(monitor="validation_loss", patience=7, mode='min') #validation_f1_score_macro / validation_loss
+    checkpointing = pl.callbacks.ModelCheckpoint(monitor="validation_loss", mode='min')
 
     trainer = pl.Trainer(
         gpus=model.cfg.gpus_available,
@@ -379,11 +379,7 @@ def AL_deep_adversarial(current_train_loader, current_val_loader, new_x, take_un
 
 def get_graph_embeddings_mean(data):
     ls = []
-    i = 0
     for dat in data:
-        ls.append(dat.x.mean(dim=0))
-        i += 1
-        if i > 4:
-            break  #FEDE: maybe here we could take just the first embedding (news title)
+        ls.append(dat.x[0:5].mean(dim=0))
     app = torch.stack(ls).cpu().detach().numpy()
     return app

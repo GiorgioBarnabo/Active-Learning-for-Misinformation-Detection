@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from . import gnn_base_models
 import os
+import wandb
 from itertools import compress
 project_folder = os.path.join('..')
 
@@ -21,19 +22,21 @@ def initialize_graph_model(cfg):
     model = GNN_Misinfo_Classifier(cfg)
 
     wandb_logger = pl.loggers.WandbLogger(
-        project = "Misinformation_Detection",
+        reinit=True,
+        settings=wandb.Settings(start_method='thread'),
+        project = "Misinformation_Detection_Condor_Extra_Batches_2",  #Misinformation_Detection_Condor_Extra_Batches / Misinformation_Detection_Politifact
         entity = "misinfo_detection",
         #name = str(self.experiment_id), #!!!!!!!WHY?!!!!!!
-        save_dir = os.path.join(project_folder,"out","training_logs","wandb"),
+        save_dir = os.path.join(project_folder,"out","training_logs","wandb", "wandb", "politifact_batch_3"),  #politifact_batch_2 / condor_batch_1
     )
 
-    es = pl.callbacks.EarlyStopping(monitor="validation_f1_score_macro", 
-                                    patience=7, mode='max')  #validation_f1_score_macro / validation_loss
+    es = pl.callbacks.EarlyStopping(monitor="validation_loss", 
+                                    patience=7, mode='min')  #validation_f1_score_macro / validation_loss
     
     checkpointing = pl.callbacks.ModelCheckpoint(
-        monitor="validation_f1_score_macro",
-        dirpath=os.path.join(project_folder,"out","models"),
-        mode='max'
+        monitor="validation_loss",
+        dirpath=os.path.join(project_folder,"out","models", "politifact_batch_3"), # condor_batch_1   politifact_batch_2
+        mode='min'
     )
     
     trainer = pl.Trainer(
@@ -49,7 +52,7 @@ def initialize_graph_model(cfg):
         precision=16,
     )
 
-    return model, trainer
+    return model, trainer, wandb_logger
 
 class GNN_Misinfo_Classifier(pl.LightningModule):
     def __init__(self, cfg):
